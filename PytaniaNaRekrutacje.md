@@ -1,4 +1,6 @@
 
+>  :bulb: **DOM** - The Document Object Model
+>
 
 **Browser DOM**   
 >Pozwala na przedstawienie dokumentu HTML w postaci struktury drzewa, w którym węzły odpowiadają poszczególnym elementom. Przechowywany jest on w przeglądarce i ma bezpośredni związek z tym, co widzimy na stronie.
@@ -13,3 +15,6 @@ Nie zależy od wewnętrznej implementacji przeglądarki
 Wykorzystuje dobre praktyki aktualizacji rzeczywistego DOM (optymalizacja poprzez grupowanie aktualizacji tzw. batching)
 
 
+> VDOM przekopiuje naprzyklad wszytskie elementy a tek ktory sie zmienil wyrendreuje na nowo.. taki szybki przyklad
+
+---
