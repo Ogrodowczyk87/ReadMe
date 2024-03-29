@@ -22,6 +22,13 @@ Współczesne podejście zakłada tworzenie stron dynamicznych, na których uży
 
 # Renderowanie warunkowe przy pomocy operatora logicznego &&
 
+
+# :bulb: wazne
+
+>children to jest to co definujemy miedzy nawiasami!!
+
+---
+
 Czyta się jako: jeśli warunek sprowadza się do true, wyrenderuj wszystko na prawo od operatora.
 
 ```JS
@@ -72,3 +79,178 @@ const Mailbox = ({ name, unreadMessages }) => {
   );
 };
 ```
+
+
+---
+
+# Style wbudowane
+
+Istnieje kilka sposobów stylowania komponentów, z których najprostszym (ale jednocześnie najbardziej ograniczonym) są style wbudowane. W tym celu używany jest atrybut HTML style, który w składni JSX React przyjmuje obiekt styli (w przeciwieństwie do oryginalnej składni HTML, która oczekuje łańcucha znaków).
+
+# :bulb: WAZNE
+>zamaist myslinkow jak w css uwywa sie cammelCase  
+background-color: red;        <---- css  
+ backgroundColor: "gray",     <---- wbudowany styl
+```JS
+const App = () => {
+  return (
+    <p
+      style={{
+        margin: 8,
+        padding: "12px 16px",
+        borderRadius: 4,  // wartosc liczbowa domyslnie jest w px
+        backgroundColor: "gray",
+        color: "white",
+      }}
+    >
+      Please update your email!
+    </p>
+  );
+};
+```
+
+Na podstawie powyższego przykładu możemy wyróżnić kilka reguł dla obiektu style:
+
+- Nazwy właściwości składające się z dwóch lub więcej słów, takie jak background-color, muszą być zapisane w notacji camelCase (backgroundColor). Analogicznie jak w przypadku odwoływania się do właściwości obiektu style elementu DOM.
+- Przyrostek px zostanie automatycznie dodany do wartości liczbowych większości właściwości. Jeśli konieczne jest użycie jednostek innych niż px lub jeśli wartość składa się z wielu części, może być ona określona jako łańcuch znaków.
+
+Przenieśmy obiekt style do zmiennej, aby poprawić czytelność znaczników JSX.
+
+```JS
+const alertStyles = {
+  margin: 8,
+  padding: "12px 16px",
+  borderRadius: 4,
+  backgroundColor: "gray",
+  color: "white",
+};
+
+const App = () => {
+  return (
+    <>
+      <p style={alertStyles}>Please update your email!</p>
+      <p style={alertStyles}>There was an error during transaction!</p>
+      <p style={alertStyles}>Payment received, thank you for your purchase!</p>
+    </>
+  );
+};
+```
+
+Na podstawie powyższego przykładu możemy wyróżnić kilka reguł dla obiektu style:
+
+- Nazwy właściwości składające się z dwóch lub więcej słów, takie jak background-color, muszą być zapisane w notacji camelCase (backgroundColor). Analogicznie jak w przypadku odwoływania się do właściwości obiektu style elementu DOM.
+- Przyrostek px zostanie automatycznie dodany do wartości liczbowych większości właściwości. Jeśli konieczne jest użycie jednostek innych niż px lub jeśli wartość składa się z wielu części, może być ona określona jako łańcuch znaków.
+
+ >Przenieśmy obiekt style do zmiennej, aby poprawić czytelność znaczników JSX.
+
+ ```JS
+ const alertStyles = {
+  margin: 8,
+  padding: "12px 16px",
+  borderRadius: 4,
+  backgroundColor: "gray",
+  color: "white",
+};
+
+const App = () => {
+  return (
+    <>
+      <p style={alertStyles}>Please update your email!</p>
+      <p style={alertStyles}>There was an error during transaction!</p>
+      <p style={alertStyles}>Payment received, thank you for your purchase!</p>
+    </>
+  );
+};
+```
+
+Style inline mogą wydawać się wygodne ze względu na łatwość ich użycia, ale mają wiele istotnych wad.
+
+- Bardzo słaba skalowalność i ponowne wykorzystanie styli w innych miejscach aplikacji
+- Ograniczone funkcje (pseudoklasy, pseudoelementy, właściwości adaptacyjne)
+- Kiepska wydajność podczas renderowania dużej liczby elementów
+- Brak wygodnych narzędzi programistycznych ułatwiających pracę ze stylami
+- Brak wsparcia popularnych narzędzi, takich jak autoprefixer
+- 
+
+>Wnioski   
+>
+>W praktyce style wbudowane są używane tylko dla wartości właściwości CSS obliczanych dynamicznie, w połączeniu z zewnętrznymi arkuszami stylów. Nie są one jednak zalecane i dlatego nie powinny być używane w projektach.
+
+
+# Vanilla CSS
+
+Style komponentu można również umieścić w arkuszu stylów. W tym przypadku style każdego komponentu są deklarowane w osobnym pliku CSS z rozszerzeniem .css. Nazwa pliku powinna się składać z nazwy komponentu i rozszerzenia. Na przykład dla komponentu Alert arkusz stylów miałby nazwę Alert.css.
+
+```css
+.alert {
+  margin: 8px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  background-color: gray;
+  color: white;
+}
+```
+
+# Tworzenie klas CSS
+
+Dodajmy klasy CSS dla każdego typu alertu, aby kontrolować kolor tła na podstawie właściwości variant. Dla wygody nazwijmy poszczególne klasy analogicznie jak nasze zdefiniowane stany właściwości variant.
+
+```css
+.alert {
+  margin: 8px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  color: white;
+}
+
+.alert.info {
+  background-color: blue;
+}
+
+.alert.success {
+  background-color: green;
+}
+
+.alert.error {
+  background-color: red;
+}
+
+.alert.warning {
+  background-color: orange;
+}
+```
+
+Dodajmy jeszcze dwie opcjonalne właściwości (props) outlined i elevated do komponentu Alert. Wartości jakie będą one przyjmować to true, false lub undefined. Jeśli wartość właściwości będzie równa true dodamy odpowiednie klasy is-outlined i is-elevated do elementu <p>.
+
+```css
+/* Cały poprzedni kod CSS */
+
+.alert.is-outlined {
+  outline: 1px solid black;
+}
+
+.alert.is-elevated {
+  box-shadow: rgb(0 0 0 / 20%) 0px 3px 3px -2px, rgb(0 0 0 / 14%) 0px 3px 4px 0px,
+    rgb(0 0 0 / 12%) 0px 1px 8px 0px;
+}
+```
+
+Proces obliczania końcowej wartości atrybutu className zależy od dewelopera i bieżącego zadania. W poniższym przykładzie używamy tablicy łańcuchów i bloku if. Klasa alert w połaczeniu z wariantem jest zawsze dodana do tablicy. Natomiast klasy dla właściwości elevated i outlined zostaną dodane tylko wtedy, gdy spełniony zostanie odpowiedni warunek.
+
+```js
+import "./Alert.css";
+
+const Alert = ({ variant, outlined, elevated, children }) => {
+  const classNames = ["alert", variant];
+
+  if (outlined) classNames.push("is-outlined");
+  if (elevated) classNames.push("is-elevated");
+
+  return <p className={classNames.join(" ")}>{children}</p>;
+};
+```
+---
+
+>Brak standardu :bulb:
+>
+>Aby obliczyć ostateczną wartość atrybutu className, moglibyśmy użyć bloku if...else, instrukcji switch, operatora warunkowego lub innej składni JavaScript dającej analogiczny wynik. Najważniejsze jest to, aby ostateczna wartość atrybutu była poprawnie skomponowana i nie zawierała dodatkowych, lub nieprawidłowych wartości.
