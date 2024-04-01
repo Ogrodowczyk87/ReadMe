@@ -1,3 +1,18 @@
+- [Java Script](#java-script)
+- [Deklaracja zmiennej](#deklaracja-zmiennej)
+- [Kiedy wykorzystywać const i let](#kiedy-wykorzystywać-const-i-let)
+- [constants i CONSTANTS (stałe)](#constants-i-constants-stałe)
+- [Operator typeof](#operator-typeof)
+- [Operatory porównania](#operatory-porównania)
+- [Operatory równości](#operatory-równości)
+- [Klasa Math](#klasa-math)
+- [Metoda indexOf()](#metoda-indexof)
+- [Metoda includes()](#metoda-includes)
+- [Metoda endsWith()](#metoda-endswith)
+- [Metoda replace() i replaceAll()](#metoda-replace-i-replaceall)
+- [Metoda slice()](#metoda-slice)
+
+
 # Java Script
 
 

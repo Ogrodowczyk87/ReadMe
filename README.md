@@ -1,3 +1,25 @@
+- [Heading 1](#heading-1)
+  - [Heading 2](#heading-2)
+    - [Heading 3](#heading-3)
+      - [Heading 4](#heading-4)
+        - [Heading 5](#heading-5)
+          - [Heading 6](#heading-6)
+    - [Horizontal Rule](#horizontal-rule)
+    - [Text formating](#text-formating)
+    - [Lists](#lists)
+    - [Code formating](#code-formating)
+    - [Blockquote](#blockquote)
+    - [Links](#links)
+    - [Images](#images)
+  - [Extended Syntax](#extended-syntax)
+    - [Table](#table)
+    - [Task List](#task-list)
+    - [Emoji](#emoji)
+    - [Comments](#comments)
+    - [Toggle](#toggle)
+    - [Callouts](#callouts)
+    - [Table of Contents](#table-of-contents)
+
 
 ## Basic Syntax
 
