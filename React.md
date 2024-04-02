@@ -9,6 +9,16 @@
 - [Normalizacja stylu](#normalizacja-stylu)
 - [Komponenty klasy](#komponenty-klasy)
 - [Zdarzenia](#zdarzenia)
+- [Licznik](#licznik)
+- [Funkcje obsługi zdarzeń](#funkcje-obsługi-zdarzeń)
+- [Powiązanie this](#powiązanie-this)
+- [Powiązanie w trakcie przekazywania callbacku](#powiązanie-w-trakcie-przekazywania-callbacku)
+- [Powiązanie w konstruktorze](#powiązanie-w-konstruktorze)
+- [Publiczne właściwości klasy](#publiczne-właściwości-klasy)
+- [Wewnętrzny stan komponentu](#wewnętrzny-stan-komponentu)
+- [Stan początkowy w zależności od props](#stan-początkowy-w-zależności-od-props)
+- [Zmiana stanu komponentu](#zmiana-stanu-komponentu)
+- [Jak aktualizuje się stan](#jak-aktualizuje-się-stan)
 
 
 # Single-Page Application
@@ -370,7 +380,7 @@ Dla natywnego zdarzenia przeglądarki React posiada obiekt-opakowanie SyntheticE
 - 
 W React "pod maską" realizowane jest delegowanie zdarzeń. "Listenery" nie są dodawane bezpośrednio do elementów DOM. Przekazanie callback'a to po prostu rejestracja funkcji, która będzie wywołana przez wewnętrzne mechanizmy React'a w przypadku wystąpienia zdarzenia.
 
-#Licznik
+# Licznik
 
 Stwórzmy komponent-licznik, który docelowo będzie miał możliwość zwiększania i zmniejszania wartości.
 
@@ -398,4 +408,304 @@ class Counter extends Component {
 }
 
 ReactDOM.render(<Counter step={5} />, document.getElementById("root"));
+```
+
+
+# Funkcje obsługi zdarzeń
+
+Najczęściej funkcje obsługi zdarzeń deklaruje się jak metody klasy, a następnie do atrybutu JSX przekazywana jest referencja do danej metody.
+
+```JS
+class Counter extends Component {
+/* ... */
+
+  handleIncrement(evt) {
+    console.log("Increment button was clicked!", evt);// działa
+    console.log("this.props: ", this.props);// Error: cannot read props of undefined
+  }
+
+  handleDecrement(evt) {
+    console.log("Decrement button was clicked!", evt);// działa
+    console.log("this.props: ", this.props);// Error: cannot read props of undefined
+  }
+
+  render() {
+    const { step } = this.props;
+
+    return (
+      <div>
+        <span>0</span>
+        <button type="button" onClick={this.handleIncrement}>
+          Increment by {step}
+        </button>
+        <button type="button" onClick={this.handleDecrement}>
+          Decrement by {step}
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+# Powiązanie this
+
+Należy zawsze pamiętać o wartości this w metodach wykorzystywanych jako funkcje callback. W JavaScripcie kontekst w metodach klasy nie przywiązuje się domyślnie. Jeśli zapomni się o powiązaniu kontekstu to w czasie wywołania funkcji (w ramach obsługi zdarzenia) this pozostanie nieokreślony.
+
+# Powiązanie w trakcie przekazywania callbacku
+
+Unikaj powiązywania kontekstu w metodzie render(). Za każdym razem, gdy komponent renderuje się ponownie, Function.prototype.bind() zwraca nową funkcję i przekazuje ją w dół drzewa komponentów. Pprowadzi do powtórnego renderowania komponentów dzieci. Może to mieć istotny wpływ na wydajność.
+
+```JS 
+// ❌ Źle
+class Counter extends Component {
+/* ... */
+
+  handleIncrement(evt) {
+// ...
+  }
+
+  handleDecrement(evt) {
+// ...
+  }
+
+  render() {
+    const { step } = this.props;
+
+    return (
+      <div>
+        <span>0</span>
+        <button type="button" onClick={this.handleIncrement.bind(this)}>
+          Increment by {step}
+        </button>
+        <button type="button" onClick={this.handleDecrement.bind(this)}>
+          Decrement by {step}
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+# Powiązanie w konstruktorze
+
+Kontekst można również powiązać w konstruktorze klasy. Jednak można sobie wyobrazić, o ile zwiększy się otrzymamy konstruktor, jeśli funkcji będzie wiele.
+
+-  Konstruktor wykonuje się jeden raz, dlatego bind również zostanie wywołane tylko jeden raz.
+-  Metody klasy zapisywane są we właściwości prototype funkcji-konstruktora.
+
+
+
+```JS
+// ✅ Nieźle
+class Counter extends Component {
+/* ... */
+
+  constructor() {
+    super();
+    this.handleIncrement = this.handleIncrement.bind(this);
+    this.handleDecrement = this.handleDecrement.bind(this);
+  }
+
+  handleIncrement(evt) {
+// ...
+  }
+
+  handleDecrement(evt) {
+// ...
+  }
+
+  render() {
+    const { step } = this.props;
+
+    return (
+      <div>
+        <span>0</span>
+        <button type="button" onClick={this.handleIncrement}>
+          Increment by {step}
+        </button>
+        <button type="button" onClick={this.handleDecrement}>
+          Decrement by {step}
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+# Publiczne właściwości klasy
+Rekomendowany sposób przywiązania kontekstu to składnia publicznych pól klasy. Po wywołaniu publicznych pól klasy, zapisują się one nie we właściwości prototype funkcji-konstruktora, a w obiekcie egzemplarza klasy.
+
+```JS
+// ✅ Super
+class Counter extends Component {
+/* ... */
+
+  handleIncrement = evt => {
+    console.log("Increment button was clicked!", evt);// działa
+    console.log("this.props: ", this.props);// działa
+  };
+
+  handleDecrement = evt => {
+    console.log("Decrement button was clicked!", evt);// działa
+    console.log("this.props: ", this.props);// działa
+  };
+
+  render() {
+    const { step } = this.props;
+
+    return (
+      <div>
+        <span>0</span>
+        <button type="button" onClick={this.handleIncrement}>
+          Increment by {step}
+        </button>
+        <button type="button" onClick={this.handleDecrement}>
+          Decrement by {step}
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+# Wewnętrzny stan komponentu
+
+Stan komponentu (state) pozwala nam dynamicznie aktualizować interfejs użytkownika w odpowiedzi na jego działania. Za każdym razem, gdy zmienia się stan komponentu (lub propsy), wywoływana jest metoda render(). W stanie powinniśmy przechowywać jedynie minimalny, niezbędny zestaw danych, potrzebny do prawidłowego zaktualizowania interfejsu użytkownika.
+
+![stan komponentu](./Images//reactivity.jpg)
+
+Stan należy do komponentu klasowego i można go zmienić tylko za pomocą metod zdefiniowanych w obrębie klasy. Zmiana stanu komponentu nigdy nie aktualizuje jego rodzica i sąsiadów. Aktualizacji podlegają natomiast wszystkie elementy dzieci danego komponentu. W takim modelu dane w aplikacji przekazują się tylko w jeden konkretny sposób nazywany jednokierunkowym przepływem danych (one way data flow).v
+
+![stan komponentu](./Images/data-flow.jpg)
+
+Stan deklaruje się w konstruktorze, ze względu na to, że jest on wywoływany jako pierwszy podczas tworzenia egzemplarza klasy.
+
+```JS
+class Counter extends Component {
+  constructor() {
+    super();
+
+    this.state = {
+      value: 0,
+    };
+  }
+
+/* ... */
+
+  render() {
+    return (
+      <div>
+        <span>{this.state.value}</span>
+        {/* ... */}
+      </div>
+    );
+  }
+}
+```
+
+# Stan początkowy w zależności od props
+Czasami konieczne może być aby początkowy stan zależał od przekazanych propsów, np. początkowa wartość naszego licznika. W takim przypadku należy jawnie zadeklarować parametr props w konstruktorze i przekazać go do wywołania super(props). Dopiero wtedy w konstruktorze będzie dostępne this.props.
+
+```JS
+class Counter extends Component {
+  static defaultProps = {
+    step: 1,
+    initialValue: 0,
+  };
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      value: this.props.initialValue,
+    };
+  }
+
+/* ... */
+}
+
+ReactDOM.render(<Counter initialValue={10} />, document.getElementById("root"));
+```
+
+Możemy jednak pominąć męczące deklarowanie konstruktora i zdefiniować stan jako publiczną właściwość klasy. Traspilator (Babel) zajmie się wszystkim za nas.
+
+```JS
+class Counter extends Component {
+  static defaultProps = {
+    step: 1,
+    initialValue: 0,
+  };
+
+  state = {
+    value: this.props.initialValue,
+  };
+
+/* ... */
+}
+```
+
+# Zmiana stanu komponentu
+Aktualizacja stanu komponentu odbywa się z wykorzystaniem odziedziczonej metody setState().
+
+```JS
+setState(updater, callback);
+```
+
+- Jako pierwszy, obowiązkowy argument przekazujemy obiekt z polami wskazującymi, jaką część stanu chcemy zmienić.
+- Jako drugi, nieobowiązkowy argument można przekazać funkcję callback, która wykona się po zmianie stanu.
+
+>⚠️ danger
+>
+>Obiekt stanu state to właściwość klasy, jednak nigdy nie wolno jej zmieniać bezpośrednio.
+
+```JS
+state = { fullName: "Poly" };
+
+// ❌ Źle - mutacja stanu
+this.state.fullName = "Mango";
+
+// ✅ Dobrze
+this.setState({
+  fullName: "Mango",
+});
+```
+
+Stwórzmy komponent z przełącznikiem, którego metody będą nadpisywać wartość isOpen w stanie.
+
+```JS
+class Toggle extends Component {
+  state = { isOpen: false };
+
+  show = () => this.setState({ isOpen: true });
+
+  hide = () => this.setState({ isOpen: false });
+
+  render() {
+    const { isOpen } = this.state;
+    const { children } = this.props;
+
+    return (
+      <>
+        <button onClick={this.show}>Show</button>
+        <button onClick={this.hide}>Hide</button>
+        {isOpen && children}
+      </>
+    );
+  }
+}
+```
+
+# Jak aktualizuje się stan
+Aktualizując stan przy pomocy setState() nie musimy przekazywać wszystkich właściwości przechowywanych w stanie. Wystarczy przekazać jedynie tą część stanu, którą chcemy zmienić w danym momencie. React sam zadba o poprawną aktualizację stanu biorąc aktualny stan i obiekt, który został przekazany w setState(). Odbywa się to zgodnie ze schematem:
+
+
+```JS
+// stan przed połączeniem
+const currentState = { a: 2, b: 3, c: 7, d: 9 };
+
+// obiekt przekazany w setState
+const updateSlice = { b: 5, d: 4 };
+
+// nowa wartość this.state po połączeniu
+const nextState = { ...currentState, ...updateSlice };// {a: 2, b: 5, c: 7, d: 4}
 ```
