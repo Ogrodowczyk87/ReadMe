@@ -7,6 +7,8 @@
 - [Vanilla CSS](#vanilla-css)
 - [Tworzenie klas CSS](#tworzenie-klas-css)
 - [Normalizacja stylu](#normalizacja-stylu)
+- [Komponenty klasy](#komponenty-klasy)
+- [Zdarzenia](#zdarzenia)
 
 
 # Single-Page Application
@@ -321,4 +323,79 @@ img {
   max-width: 100%;
   height: auto;
 }
+```
+
+# Komponenty klasy
+
+Komponenty tworzymy jako klasy, kiedy niezbędne jest dodanie do nich dynamiki. Dotychczas komponenty funkcyjne były ograniczone możliwościami tylko do otrzymywania propsów. Nie jest to już prawda, odkąd w React udostępnione zostały hooki (od wersji React 16.8), natomiast zostanie to omówione w późniejszych rozdziałach.
+
+![single-Page Aplication ](./Images/class-component.jpg)
+
+- Zwykła klasa ES6, dlatego stosujemy wymaganą składnię JavaScript: konstruktor, metody, kontekst (this).
+- Obowiązkowo rozszerza klasę podstawową React.Component.
+- Działa jak funkcja, która otrzymuje props, ale dostęp do właściwości odbywa się z użyciem kontekstu (this.props).
+- Należy zadeklarować obowiązkową metodę render(), która zwraca elementy JSX. Zostanie ona wywołana automatycznie przez Reacta.
+- Użycie komponentu klasy spowoduje, że React za każdym będzie tworzył nowy egzemplarz komponentu (klasy). Dlatego dostęp do propsów przebiega przez this.props.
+- Można określić niestandardowe metody klasy i wykorzystać je w dowolnym miejscu, w tym również wewnątrz JSX.
+- Zmiana stanu komponentu lub jego propsów spowoduje ponowne renderowanie ("re-render").
+
+```JS
+// Używaj importów nazwanych zamiast składni `React.Component`, zwiększa to czytelność kodu
+import React, { Component } from "react";
+
+class MyClassComponent extends Component {
+  static defaultProps = {};
+
+  static propTypes = {};
+
+  render() {
+    return <div>Class Component</div>;
+  }
+}
+```
+
+
+# Zdarzenia
+
+Dla natywnego zdarzenia przeglądarki React posiada obiekt-opakowanie SyntheticEvent Object z identycznym interfejsem. Jest to niezbędne, aby zapewnić kompatybilność z różnymi przeglądarkami i zoptymalizować wydajność.
+
+```JS
+<button onClick={event => console.log(event)}>Click me!</button>
+```
+
+- Obsługa zdarzeń z wykorzystaniem EventTarget.addEventListener() praktycznie nie jest niewykorzystywana (poza kilkoma wyjątkami).
+- Propsy zdarzeń nie są wyjątkiem i nazywane są w notacji camelCase, np. onClick, onChange, onSubmit, onMouseEnter.
+- Do propsu zdarzenia przekazujemy referencję do funkcji (callback), która zostanie wywołana w przypadku wystąpienia danego zdarzenia.
+- Funkcje obsługi zdarzeń otrzymują egzemplarz SyntheticEvent Object.
+- 
+W React "pod maską" realizowane jest delegowanie zdarzeń. "Listenery" nie są dodawane bezpośrednio do elementów DOM. Przekazanie callback'a to po prostu rejestracja funkcji, która będzie wywołana przez wewnętrzne mechanizmy React'a w przypadku wystąpienia zdarzenia.
+
+#Licznik
+
+Stwórzmy komponent-licznik, który docelowo będzie miał możliwość zwiększania i zmniejszania wartości.
+
+
+```JS
+import React, { Component } from "react";
+import ReactDOM from "react-dom";
+
+class Counter extends Component {
+  static defaultProps = {
+    step: 1,
+  };
+
+  render() {
+    const { step } = this.props;
+
+    return (
+      <div>
+        <span>0</span>
+        <button type="button">Increment by {step}</button>
+        <button type="button">Decrement by {step}</button>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(<Counter step={5} />, document.getElementById("root"));
 ```
