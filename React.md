@@ -19,6 +19,8 @@
 - [Stan początkowy w zależności od props](#stan-początkowy-w-zależności-od-props)
 - [Zmiana stanu komponentu](#zmiana-stanu-komponentu)
 - [Jak aktualizuje się stan](#jak-aktualizuje-się-stan)
+- [Asynchroniczność aktualizacji stanu](#asynchroniczność-aktualizacji-stanu)
+- [setState z funkcją](#setstate-z-funkcją)
 
 
 # Single-Page Application
@@ -708,4 +710,105 @@ const updateSlice = { b: 5, d: 4 };
 
 // nowa wartość this.state po połączeniu
 const nextState = { ...currentState, ...updateSlice };// {a: 2, b: 5, c: 7, d: 4}
+```
+
+# Asynchroniczność aktualizacji stanu
+
+Tak naprawdę metoda setState() nie zmienia stanu natychmiast. Rejestruje ona asynchronicznną operację aktualizacji stanu, która staje w kolejce aktualizacji. Może się również zdarzyć tak, że kilka aktualizacji zostanie połączonych w jedną, w celu polepszenia wydajności. Ze względu na asynchroniczność aktualizacji, dostęp do this.state w synchronicznym kodzie może zwrócić wartość stanu sprzed aktualizacji.
+
+Wyobraź sobie, że w trakcie zmiany stanu polegasz na jego obecnej wartości. Wykorzystamy pętlę for do stworzenia (rejestracji) kilku operacji zmiany stanu.
+
+```JS
+// Zaczynamy z następującym stanem:
+state = { value: 0 };
+
+// Rozpocznynamy pętlę i wywołujemy 3 operacje zmiany stanu
+for (let i = 0; i < 3; i += 1) {
+// Ponieważ to synchroniczny kod i aktualizacja stanu jeszcze nie zaszła
+  console.log(this.state.value);
+
+  this.setState({ value: this.state.value + 1 });
+}
+```
+
+Powyższy fragment kodu zwróci w konsoli wartość 0 dla każdej iteracji pętli.
+
+Wyjaśnienie:
+
+Wartość właściwości this.state.value jest zapamiętywana w czasie tworzenia obiektu przekazywanego do setState(), a nie w czasie aktualizacji stanu. Oznacza to, że jeśli w czasie utworzenia obiektu, this.state.value miało wartość 0, to do funkcji setState() przekazany zostanie obiekt {value: 0 + 1}.
+
+W wyniku wykonania pętli otrzymamy kolejkę aktualizacji z 3 obiektów { value: 0 + 1 }, { value: 0 + 1 }, { value: 0 + 1 } i oryginalny stan w momencie aktualizacji { value: 0 }. Po wszystkich aktualizacjach otrzymamy stan { value: 1 }.
+
+Z tego względu nie można polegać na obecnym stanie podczas obliczania następnego (zależnego od poprzedniego w momencie aktualizacji). Rozwiązaniem tego problemu jest drugi sposób na aktualizację stanu.
+
+# setState z funkcją
+
+Metoda setState() jako pierwszy argument może przyjmować nie tylko obiekt, ale również funkcję. Niemniej, funkcja taka powinna w dalszym ciągu zwrócić obiekt, którym chcemy zaktualizować stan.
+
+```JS
+setState((state, props) => {
+  return {};
+}, callback);
+```
+Aktualny stan i propsy zostaną przekazane do funkcji na czas jej wykonywania. W ten sposób można być pewnym poprawnej wartości poprzedniego stanu podczas tworzenia następnego.
+
+```JS
+state = { value: 0 };
+
+for (let i = 0; i < 3; i += 1) {
+  console.log(this.state.value);// 0
+
+  this.setState(prevState => {
+    console.log(prevState.value);// zwróci poprawne wartości stanu podczas każdej iteracji
+
+    return { value: prevState.value + 1 };
+  });
+}
+```
+
+Poprawmy zatem komponent przełącznika Toggle.
+
+```JS
+class Toggle extends Component {
+  state = { isOpen: false };
+
+  toggle = () => {
+    this.setState(state => ({ isOpen: !state.isOpen }));
+  };
+
+  render() {
+    const { isOpen } = this.state;
+    const { children } = this.props;
+
+    return (
+      <div>
+        <button onClick={this.toggle}>{isOpen ? "Hide" : "Show"}</button>
+        {isOpen && children}
+      </div>
+    );
+  }
+}
+```
+
+Natomiast licznik będzie wyglądał następująco:
+
+```JS
+class Counter extends Component {
+/* ... */
+
+  handleIncrement = () => {
+    this.setState((state, props) => ({
+      value: state.value + props.step,
+    }));
+  };
+
+  handleDecrement = () => {
+    this.setState((state, props) => ({
+      value: state.value - props.step,
+    }));
+  };
+
+/* ... */
+}
+
 ```
