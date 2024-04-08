@@ -21,6 +21,16 @@
 - [Jak aktualizuje się stan](#jak-aktualizuje-się-stan)
 - [Asynchroniczność aktualizacji stanu](#asynchroniczność-aktualizacji-stanu)
 - [setState z funkcją](#setstate-z-funkcją)
+- [Zmiana stanu rodzica](#zmiana-stanu-rodzica)
+- [Typy wewnętrznych danych komponentu-klasy](#typy-wewnętrznych-danych-komponentu-klasy)
+- [Formularze](#formularze)
+  - [Niekontrolowane elementy](#niekontrolowane-elementy)
+- [Kontrolowane elementy](#kontrolowane-elementy)
+- [Skomplikowane formularze](#skomplikowane-formularze)
+- [Generowanie identyfikatorów dla elementów formularza](#generowanie-identyfikatorów-dla-elementów-formularza)
+- [Pola wyboru typu tak/nie (checkbox)](#pola-wyboru-typu-taknie-checkbox)
+- [Pole wielu opcji (radio)](#pole-wielu-opcji-radio)
+- [Pola wyboru (Select)](#pola-wyboru-select)
 
 
 # Single-Page Application
@@ -811,4 +821,492 @@ class Counter extends Component {
 /* ... */
 }
 
+```
+
+# Zmiana stanu rodzica
+
+React wykorzystuje jednokierunkowy przepływ danych, dlatego aby zmienić stan rodzica podczas zdarzenia w komponencie dziecku wykorzystuje się wzorzec z funkcją callback.
+
+![state-hosting](./Images/state-hoisting.gif)
+
+- W rodzicu zdefiniowany jest stan i metoda, która go zmienia.
+- Do dziecka przerzuca się, za pomocą props, metodę rodzica zmieniającą stan rodzica.
+- W dziecku zachodzi wywołanie przekazanej do niego metody.
+- Wywołaniu tej metody zmienia stan rodzica.
+- Zachodzi ponowne renderowanie poddrzewa komponentów rodzica.
+
+Spójrzmy na prosty, ale obrazowy przykła
+
+```js
+// Przycisk otrzyma funkcję changeMessage (nazwa właściwości props),
+// która zostanie wywołana podczas zdarzenia onClick
+const Button = ({ changeMessage, label }) => (
+  <button type="button" onClick={changeMessage}>
+    {label}
+  </button>
+);
+
+class App extends Component {
+  state = {
+    message: new Date().toLocaleTimeString(),
+  };
+
+// Metoda, którą będziemy przekazywać do przycisku
+  updateMessage = evt => {
+    console.log(evt);// Dostępny obiekt zdarzenia w odwołaniu onClick
+
+    this.setState({
+      message: new Date().toLocaleTimeString(),
+    });
+  };
+
+  render() {
+    return (
+      <>
+        <span>{this.state.message}</span>
+        <Button label="Change message" changeMessage={this.updateMessage} />
+      </>
+    );
+  }
+}
+```
+
+Stan komponentu App jest aktualizowany przy pomocy funkcji updateMessage, której wywołanie następuje po kliknięciu w przycisk. Wzorzec ten ustanawia wyraźną granicę pomiędzy "mądrymi" (smart) i "głupimi" (dumb) komponentami.
+
+Metodę do aktualizacji stanu rodzica możemy przekazywać poprzez props dowolną ilość razy w głąb drzewa komponentów.
+
+![deep-state-hoisting](./Images/deep-state-hoisting.gif)
+
+# Typy wewnętrznych danych komponentu-klasy
+
+- static data - statyczne właściwości i metody klasy
+- this.state.data - dane dynamiczne, poddawane aktualizacji z pomocą metod komponentu-klasy
+- this.data - dane, które będą inne dla każdej instancji klasy.
+- const DATA - stałe, które nie zmieniają się i są jednakowe dla wszystkich instancji.
+
+
+# Formularze
+
+## Niekontrolowane elementy
+
+Podstawowym celem każdego formularza jest zebranie danych od użytkownika. Do tego celu możemy wykorzystać właściwość elements elementu formualrza (form) dostępną podczas obsługi jego wysyłania. Alternatywnie możemy wykorzystać interfejs FormData.
+
+```js
+class LoginForm extends Component {
+  handleSubmit = evt => {
+    evt.preventDefault();
+
+    const form = evt.currentTarget;
+    const login = form.elements.login.value;
+    const password = form.elements.password.value;
+
+    console.log(login, password);
+
+    this.props.onSubmit({ login, password });
+
+    form.reset();
+  };
+
+  render() {
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <input type="text" name="login" />
+        <input type="password" name="password" />
+        <button type="submit">Login</button>
+      </form>
+    );
+  }
+}
+
+ReactDOM.render(
+  <LoginForm onSubmit={values => console.log(values)} />,
+  document.getElementById("root")
+);
+```
+
+Dostęp do danych w takiej formie jest właściwy, gdy dane pól formularza potrzebne są nam tylko w czasie jego wysyłania ('submit').
+
+# Kontrolowane elementy
+
+Dane pól formularza mogą nam być również potrzebne w innych komponentach albo w momencie zmiany pola. W takiej sytuacji elementy formularza powinny być kontrolowane. Najprościej mówiąć, oznacza to, że wartości wszystkich pól powinny znajdować się w stanie.
+
+![controlled_input](./Images//controlled_input.jpg)
+
+- Pole w state określa wartość atrybutu value danego elementu formularza.
+- Zdarzeniu onChange przekazuje się metodę zmieniającą wartość pola w stanie.
+
+Otrzymujemy obwód zamknięty:
+
+- Po zdarzeniu onChange, metoda klasy aktualizuje pole w stanie.
+- Po zmianie stanu zachodzi re-render.
+- Input otrzymuje zaktualizowaną wartość.
+
+Wadą takiego rozwiązania jest to, że cały formularz zostanie przerenderowany po każdej zmianie któregokolwiek z pól. Dla małych formularzy nie stanowi to jednak problem- 
+
+```js
+class App extends Component {
+  state = {
+    inputValue: "",
+  };
+
+  handleChange = evt => {
+    this.setState({ inputValue: evt.target.value });
+  };
+
+  render() {
+    const { inputValue } = this.state;
+    return (
+      <input type="text" value={inputValue} onChange={this.handleChange} />
+    );
+  }
+}
+```
+
+Zachodzi tutaj taka prawidłowość, że to nie interfejs określa, jakie mamy dane. Przeciwnie, to dane określają to, co widzi użytkownik, aktualizując DOM po zmianie stanu komponentu.
+
+# Skomplikowane formularze
+
+Utworzymy teraz formularz rejestracji.
+
+```js
+class SignUpForm extends Component {
+  state = {
+    login: "",
+  };
+
+// Odpowiada za aktualizację stanu
+  handleChange = e => {
+    this.setState({ login: e.target.value });
+  };
+
+// Wywoływany jest podczas wysyłania formularza
+  handleSubmit = evt => {
+    evt.preventDefault();
+    console.log(`Signed up as: ${this.state.login}`);
+
+// Props, który przekazywany jest do formularza do wywołania podczas jego wysyłania
+    this.props.onSubmit({ ...this.state });
+  };
+
+  render() {
+    const { login } = this.state;
+
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <label>
+          Name
+          <input
+            type="text"
+            placeholder="Enter login"
+            value={login}
+            onChange={this.handleChange}
+          />
+        </label>
+
+        <button type="submit">Sign up as {login}</button>
+      </form>
+    );
+  }
+}
+
+ReactDOM.render(
+  <SignUpForm onSubmit={values => console.log(values)} />,
+  document.getElementById("root")
+);
+```
+
+Dodajemy jeszcze pola dla email oraz password. W tym celu wykorzystamy bardzo przydatny wzorzec aktualizacji stanu wielu pól z użyciem jednej metody.
+
+```js
+// Dla poprawy czytelności kodu można przenieść stan początkowy formularza poza ciało klasy.
+// Możemy tak zrobić, jeżeli wartości nie są obliczane dynamicznie.
+const INITIAL_STATE = {
+  login: "",
+  email: "",
+  password: "",
+};
+
+class SignUpForm extends React.Component {
+  state = { ...INITIAL_STATE };
+
+// Dla wszystkich elementów wykorzystamy jedną funkcję obsługującą zmianę stanu ('handler').
+// Inputy będziemy rozróżniać za pomocą atrybutu `name`
+  handleChange = evt => {
+    const { name, value } = evt.target;
+    this.setState({ [name]: value });
+  };
+
+  handleSubmit = evt => {
+    evt.preventDefault();
+    const { login, email, password } = this.state;
+
+    console.log(`Login: ${login}, Email: ${email}, Password: ${password}`);
+
+    this.props.onSubmit({ ...this.state });
+    this.reset();
+  };
+
+  reset = () => {
+    this.setState({ ...INITIAL_STATE });
+  };
+
+  render() {
+    const { login, email, password } = this.state;
+
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <label>
+          Name
+          <input
+            type="text"
+            placeholder="Enter login"
+            name="login"
+            value={login}
+            onChange={this.handleChange}
+          />
+        </label>
+        <label>
+          Email
+          <input
+            type="email"
+            placeholder="Enter email"
+            name="email"
+            value={email}
+            onChange={this.handleChange}
+          />
+        </label>
+        <label>
+          Password
+          <input
+            type="password"
+            placeholder="Enter password"
+            name="password"
+            value={password}
+            onChange={this.handleChange}
+          />
+        </label>
+
+        <button type="submit">Sign up as {login}</button>
+      </form>
+    );
+  }
+}
+```
+
+# Generowanie identyfikatorów dla elementów formularza
+
+**Dostępność (accessibility, a11y)** to obecnie bardzo ważny temat w sieci. Atrybut HTML for dla tagu label pomaga technologiom wspomagającym użytkowników lepiej zrozumieć i odczytać interfejs formularza. Jako, że for to słowo kluczowe w JavaScript, w React JSX atrybut nosi nazwę htmlFor.
+
+Do generowania interaktywnych elementów formularzy wykorzystywane jest następujące podejście: dla każdego egzemplarza komponentu, przy jego inicjalizacji, tworzony jest zestaw unikalnych identyfikatorów przechowywanych na egzemplarzu. W ten sposób między różnymi formularzami uzyskamy unikalne id.
+
+```js
+// Możemy wykorzystać dowolną bibliotekę do generowania unikalnych łańcuchów
+import { nanoid } from "nanoid";
+
+class Form extends React.Component {
+  loginInputId = nanoid();
+
+  render() {
+    return (
+      <form>
+        <label htmlFor={this.loginInputId}>Login</label>
+        <input type="text" name="login" id={this.loginInputId} />
+      </form>
+    );
+  }
+}
+```
+
+Wykorzystując bibliotekę nanoid tworzymy unikalny identyfikator pola i zapisujemy go w polu klasy. Wartość zostanie wygenerowana podczas inicjalizacji klasy, i dzięki wykorzystaniu pola klasy, nie ulegnie zmianie podczas re-renderów komponentu. Biblioteka zagwarantuje nam unikalność identyfikatorów dla wszystkich elementów, również pomiędzy wieloma formularzami.
+
+# Pola wyboru typu tak/nie (checkbox)
+
+Cechy charakterystyczne pól wyboru:
+
+- Może mieć tylko dwa stany: true lub false.
+- Aktualną wartość ze stanu przekazujemy do pola checked.
+- Podczas obsługi zdarzenia onChange dostęp do wartości pola udostępniony jest poprzez event.target.checked.
+- Jeżeli chcemy, aby przycisk wyboru przechowywał inną wartość niż logiczną, możemy również wykorzystać atrybut value.
+
+Dodajmy do naszego formularza rejestracji pole wyboru do potwierdzenia zgody użytkownika. Przycisk wysyłania furmularza ('submit') dezaktywujemy, dopóki pole wyboru nie zostanie kliknięt- 
+
+```js
+const INITIAL_STATE = {
+  login: "",
+  email: "",
+  password: "",
+  agreed: false,
+};
+
+class SignUpForm extends React.Component {
+  state = {
+    ...INITIAL_STATE,
+  };
+
+  handleChange = evt => {
+    const { name, value, type, checked } = evt.target;
+// Jeżeli typ elementu to checkbox, bierzemy wartość checked,
+// w przeciwnym razie value
+    this.setState({ [name]: type === "checkbox" ? checked : value });
+  };
+
+  handleSubmit = e => {
+    e.preventDefault();
+    const { login, email, password, agreed } = this.state;
+    console.log(
+      `Login: ${login}, Email: ${email}, Password: ${password}, Agreed: ${agreed}`
+    );
+
+/* ... */
+  };
+
+  render() {
+    const { login, email, password, agreed } = this.state;
+
+    return (
+      <form onSubmit={this.handleSubmit}>
+        {/* ... */}
+        <label>
+          Agree to terms
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={this.handleChange}
+          />
+        </label>
+
+        <button type="submit" disabled={!agreed}>
+          Sign up as {login}
+        </button>
+      </form>
+    );
+  }
+}
+````
+
+# Pole wielu opcji (radio)
+
+Pole typu radio posiada zarówno atrybut name (określający przypisaną wartość pola), jak również checked (określający, czy dana wartość została wybrana).
+
+```js
+<input
+  type="radio"
+  checked={this.state.gender === "male"}
+  value="male"
+  onChage={this.handleGenderChange}
+/>
+```
+
+Dodajmy grupę przycisków opcji do naszego formularza.
+
+```js
+// Wykorzystujemy obiekt konfiguracyjny (enum) do zdefiniowania dostępnych wartości pola wyboru.
+// Jest to postrzegane jako dobry wzorzec, w porównaniu z tzw. "magicznymi łańcuchami" wartości, które biorą się znikąd.
+const Gender = {
+  MALE: "male",
+  FEMALE: "female",
+};
+
+const INITIAL_STATE = {
+  login: "",
+  email: "",
+  password: "",
+  agreed: false,
+  gender: null,
+};
+
+class SignUpForm extends React.Component {
+  state = {
+    ...INITIAL_STATE,
+  };
+
+/*... */
+
+  render() {
+    const { login, email, password, agreed, gender } = this.state;
+
+    return (
+      <form onSubmit={this.handleSubmit}>
+        {/* ... */}
+
+        <section>
+          <h2>Choose your gender</h2>
+          <label>
+            Male
+            <input
+              type="radio"
+              checked={gender === Gender.MALE}
+              name="gender"
+              value={Gender.MALE}
+              onChange={this.handleChange}
+            />
+          </label>
+          <label>
+            Female
+            <input
+              type="radio"
+              checked={gender === Gender.FEMALE}
+              name="gender"
+              value={Gender.FEMALE}
+              onChange={this.handleChange}
+            />
+          </label>
+        </section>
+
+        <button type="submit" disabled={!agreed}>
+          Sign up as {login}
+        </button>
+      </form>
+    );
+  }
+}
+```
+
+# Pola wyboru (Select)
+
+Obsługa pola wyboru typu select jest analogiczna. Wykorzystujemy atrybut value oraz zdarzenie onChange.
+
+```js
+const INITIAL_STATE = {
+  login: "",
+  email: "",
+  password: "",
+  agreed: false,
+  gender: null,
+  age: "",
+};
+
+class SignUpForm extends React.Component {
+  state = {
+    ...INITIAL_STATE,
+  };
+
+/* ... */
+
+  render() {
+    const { login, email, password, agreed, gender, age } = this.state;
+
+    return (
+      <form onSubmit={this.handleSubmit}>
+        {/* ... */}
+
+        <label>
+          Choose your age
+          <select name="age" value={age} onChange={this.handleChange}>
+            <option value="" disabled>
+              ...
+            </option>
+            <option value="18-25">18-25</option>
+            <option value="26-35">26-35</option>
+            <option value="36+">36+</option>
+          </select>
+        </label>
+
+        <button type="submit" disabled={!agreed}>
+          Sign up as {login}
+        </button>
+      </form>
+    );
+  }
+}
 ```

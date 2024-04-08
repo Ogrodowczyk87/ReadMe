@@ -1,5 +1,15 @@
+- [Start nowego projektu](#start-nowego-projektu)
 - [Normalizacja stylu](#normalizacja-stylu)
 
+
+# Start nowego projektu 
+
+```JS
+// Vite
+npm create vite@latest
+// React 
+npx create-react-app my-app
+```
 
 # Normalizacja stylu
 
