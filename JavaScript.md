@@ -1,6 +1,10 @@
 - [Java Script](#java-script)
 - [Deklaracja zmiennej](#deklaracja-zmiennej)
 - [Kiedy wykorzystywać const i let](#kiedy-wykorzystywać-const-i-let)
+- [Operatory logiczne](#operatory-logiczne)
+  - [Konwertowanie typu](#konwertowanie-typu)
+- [Operatory logiczne](#operatory-logiczne-1)
+  - [Logiczne «AND»(i)](#logiczne-andi)
 - [constants i CONSTANTS (stałe)](#constants-i-constants-stałe)
 - [Operator typeof](#operator-typeof)
 - [Operatory porównania](#operatory-porównania)
@@ -14,6 +18,7 @@
 
 
 # Java Script
+
 
 
 # Deklaracja zmiennej
@@ -35,6 +40,62 @@ let i const należy wykorzystywać w ten sposób:
 
     Używaj const domyślnie, większość zmiennych będzie deklarowana właśnie w taki sposób.
     Używaj let, jeśli będziesz przypisywał nowe wartości do zmiennej podczas wykonywania skryptu.
+
+# Operatory logiczne
+
+Operatory logiczne służą do sprawdzenia warunków z wieloma wyrażeniami, na przykład operacjami porównania.
+
+## Konwertowanie typu
+
+W operacjach logicznych typy operandów są konwertowane na true lub false. Konwersja występuje, gdy w kodzie zostanie znaleziony operator logiczny.
+
+Truthy i Falsy - terminy używane dla tych wartości, które w operacji logicznej są konwertowane na true lub false, chociaż jako takie nie miały typu boolean.
+
+>:bulb:CIEKAWOSTKA
+>
+>Istnieje 6 nieprawdziwych (false) wartości, które sprowadzają się do false (są falsy) w logicznej konwersji: 0, NaN, null, undefined, pusty string czyli "" i false. Wszystkie inne wartości sprowadzają się do true (są truthy).
+
+# Operatory logiczne
+
+W JavaScript Istnieją trzy operatory logiczne, które służą do sprawdzania wyrażeń.
+
+![boolean-operators](./Images/boolean-operators.png)
+
+## Logiczne «AND»(i)
+Operator && sprowadzi wszystkie operandy do typu boolean i zwraca 'true' jeśli wszystkie operandy są prawdziwe. Operandy są sprawdzane w kolejności zapisu, więc jeśli lewy warunek jest false, prawy już nie będzie sprawdzany a całość wyrażenia zwróci false.
+
+```js
+wyrażenie && wyrażenie
+```
+W poniższym przykładzie oba warunki zwrócą true, więc wynikiem całego wyrażenia będzie true - zostanie zwrócona wartość skrajnego prawego operandu.
+
+```JS
+const age = 20;
+console.log(age > 10 && age < 30);// true && true -> true
+```
+
+Jeśli chociażby jeden z operandów będzie false, rezultat wyrażenia otrzyma jego wartość.
+
+```js
+const age = 50;
+console.log(age > 10 && age < 30);// true && false -> false
+console.log(age > 80 && age < 120);// false && true -> false
+```
+
+Jak widzimy, logiczne «And(I)» szuka pierwszego operandu falsy i zwraca go, a jeśli go nie odnajdzie to zwróci ostatni w kolejności operand.
+
+```js
+console.log(1 && 5);// true && true -> 5
+console.log(5 && 1);// true && true -> 1
+console.log(0 && 2);// false && true -> 0
+console.log(2 && 0);// true && false -> 0
+console.log("" && "Mango");// false && true -> ""
+console.log("Mango" && "");// true && false -> ""
+console.log("Mango" && "Poly");// true && true -> "Poly"
+console.log("Poly" && "Mango");// true && true -> "Mango"
+```
+
+
 
 # constants i CONSTANTS (stałe)
 

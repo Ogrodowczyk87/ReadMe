@@ -31,6 +31,15 @@
 - [Pola wyboru typu tak/nie (checkbox)](#pola-wyboru-typu-taknie-checkbox)
 - [Pole wielu opcji (radio)](#pole-wielu-opcji-radio)
 - [Pola wyboru (Select)](#pola-wyboru-select)
+- [Cykl życiowy](#cykl-życiowy)
+- [Etap montowania](#etap-montowania)
+- [constructor](#constructor)
+- [getDerivedStateFromProps](#getderivedstatefromprops)
+- [Render](#render)
+- [componentDidMount](#componentdidmount)
+- [Etap aktualizacji](#etap-aktualizacji)
+- [Etap odmontowywania](#etap-odmontowywania)
+- [Obsługa błędów renderowania](#obsługa-błędów-renderowania)
 
 
 # Single-Page Application
@@ -1307,6 +1316,226 @@ class SignUpForm extends React.Component {
         </button>
       </form>
     );
+  }
+}
+```
+
+
+# Cykl życiowy 
+
+Istnieje kilka stadiów cyklu życia komponentu - montowanie, aktualizacja i odmontowywanie. W czasie każdego z nich w komponencie-klasie wywoływane są metody odziedziczone od React.Component. Możemy przedefiniować ich zachowanie, dodając niezbędną funkcjonalność w ramach określonych zasad.
+
+Istnieje siedem metod cyklu życiowego, pomijając render i constructor. W praktyce, do większości codziennych zadań wykorzystywane są trzy: componentDidMount, componentDidUpdate i componentWillUnmount.
+
+![lifecycle-pl](./Images/lifecycle-pl.png)
+
+# Etap montowania
+
+Następujące metody wywoływane są po kolei, gdy komponent jest tworzony i dodawany do drzewa DOM.
+
+# constructor
+
+```js
+class Alert extends Component {
+    constructor() {
+        super()
+        console.log('Alert constructor!')
+    }
+}
+```
+
+Wywoływany jest w momencie utworzenia egzemplarza komponentu, zanim zostanie on umieszczony w DOM.
+
+- Inicjalizuje stan początkowy komponentu.
+- Przywiązuje kontekst (this) w metodach.
+- Nie można w nim wywoływać setState().
+- W większości przypadków jawne zadeklarowanie konstruktora nie jest potrzebne.
+- Należy pamiętać o dodaniu 
+- er() ****przed**** wywołaniem jakiekolwiek kodu w konstruktorze - w przeciwnym wypadku otrzymany błąd: Uncaught ReferenceError: **Must call super constructor in derived class before accessing 'this' or returning from derived constructor**
+
+# getDerivedStateFromProps
+
+```js
+static getDerivedStateFromProps(nextProps, prevState) {
+    return {
+        favoriteColor: nextProps.colorList[0] 
+    }
+}
+
+//props: { colorList: [ 'red', 'blue', 'green' ] }
+//state: { favoriteColor: 'red' }
+```
+
+- W praktyce metoda ta jest wykorzystywana bardzo rzadko.
+- Wywoływana jest przed render(), zarówno podczas montowania jak i aktualizacji.
+- Możemy ją wykorzystać do ustawienia stanu w zależności od props podczas każdej ich zmiany.
+- Powinna zwrócić obiekt, którym zostanie zaktualizowany stan lub null.
+- Brak dostępu do this.
+- W większości przypadków da się ją zastąpić używając memoizacji lub pisząc logikę w componentDidUpdate lub render
+
+
+# Render
+
+```js
+// state: { isOpen: false }
+
+render() {
+    const { isOpen } = this.state
+    const { children} = this.props
+
+    return (
+        <div>
+            <button onClick={this.show}>Show</button>
+            <button onClick={this.hide}>Hide</button>
+            <button onClick={this.toggle}>{isOpen ? "Hide" : "Show"}</button>
+
+                        <div>Children list</div>
+                        {isOpen && children}
+        </div>
+    )
+}
+```
+
+- Pozwala deklaratywnie opisać interfejs.
+- Zwraca rezultat wyrażeń JSX, poddrzewo Virtual DOM.
+- Nie można w nim wywoływać setState().
+- 
+# componentDidMount
+
+```js
+async componentDidMount() {
+    const response = await axios.get('/some-url')
+    this.setState({ data: response.data })
+}
+```
+
+- Wywoływana jest po render() , po zamontowaniu komponentu w drzewie DOM.
+- W metodzie tworzymy zapytania HTTP, subskrybujemy się na zdarzenia i wykonujemy operacje na drzewie DOM.
+- Wywołanie setState() w tej metodzie spowoduje re-render – to normalne.
+- Może być definiowana z przedrostkiem async lub bez niego.
+
+# Etap aktualizacji
+
+Aktualizacja może być wywołana zmianą state samego komponentu lub przekazywanych do niego props. Każda aktualizacja prowadzi to re-renderu komponentu i wywołania poniższych metod cyklu życia.
+
+```js
+shouldComponentUpdate(nextProps, nextState) {
+    const oldProps = this.props
+
+    if (nextProps.someProp === oldProps.someProp) {
+        return false;
+    }
+
+    return true;
+}
+
+// Re-render komponentu tylko, gdy zostały przekazane nowe propsy
+```
+
+- Nie wywołuje się podczas montowania komponentu.
+- Wywołuje się tuż przed ponownym renderowaniem już zamontowanego komponentu.
+- Wymagana wyłącznie do optymalizacji procesu renderowania.
+- Domyślnie render zachodzi za każdym razem przy nowych props lub state. React nie sprawdza dokładnie nowych propsów, to jest czy są różne od poprzednich.
+- Pozwala porównać obecny i poprzedni state oraz props.
+- Zwrócenie wartości true lub false decyduje o ponownym renderze komponentu lub jego zatrzymaniu.
+- Jeśli zwróci false to nie zostanie wywołany render() i componentDidUpdate().
+- Domyślnie zwraca true
+- Nie można wywoływać setState().
+- Należy używać z rozwagą, dopiero po pomiarach wydajności, w przeciwnym razie może spowodować odwrotny efekt.
+- Przed użyciem należy wcześniej rozważyć zmianę dziedziczenia na React.PureComponent, który będzie powierzchownie porównywał prop- 
+
+
+```js
+getSnapshotBeforeUpdate(prevProps, prevState) {
+  if (prevProps.list.length < this.props.list.length) {
+    const list = this.listRef.current;
+    return list.scrollHeight - list.scrollTop;
+  }
+  return null;
+}
+
+// Przechowujemy pozycję scrolla
+```
+
+- W praktyce metoda ta jest wykorzystywana bardzo rzadko.
+- Wywoływana jest wtedy, gdy wszystkie zmiany są gotowe do dodania w DOM.
+- Można wykorzystywać do otrzymania wartości DOM przed aktualizacją, na przykład obecna pozycja suwaka lub rozmiar elementu przed aktualizacją.
+- To, co zwróci ta metoda, będzie przekazane jako trzeci parametr snapshot w componentDidUpdate().
+```js
+componentDidUpdate(prevProps, prevState, snapshot) {
+    if (this.props.getMoreItems) {
+    this.getMoreData().then(response => {
+      this.setState({
+        data: response.data,
+                scrollPosition: snapshot
+      })
+    });
+  }
+}
+```
+
+- Wywołuje się zaraz po aktualizacji komponentu w DOM.
+- Nie wywołuje się podczas montowania komponentu.
+- Można wywoływać setState(), obowiązkowo opakowując go w warunek sprawdzający poprzednie i następne props lub state, aby nie powstał niekończący się cykl ponownego renderowania.
+- Można robić zapytania HTTP.
+# Etap odmontowywania
+
+W pewnym momencie komponent zostanie usunięty z DOM. Wywoływana jest wtedy następująca metoda:
+```js
+// this.timerID = setInterval(() => { console.log('interval!') }, 1000);
+
+componentWillUnmount() {
+  console.log("Clock", "componentWillUnmount");
+  clearInterval(this.timerID);
+}
+```
+
+- Wywołuje się tuż przed odmontowaniem komponentu i usunięciem elementu z DOM.
+- Świetnie nadaje się do sprzątania po sobie: subskrypcji zdarzeń, liczników czasu, zapytań HTTP. W przeciwnym razie pojawią się wycieki pamięci.
+- Nie ma sensu wywoływać setState(), komponent nie będzie już miał okazji do przerenderowania.
+  
+
+
+# Obsługa błędów renderowania
+
+React bardzo lubi zawieszać aplikacje, jeżeli wystąpił jakiś błąd. componentDidCatch działa w przypadku wystąpienia błędu w komponencie-dziecku i pozwala komponentom-rodzicom wyłapywać te błędy. To z kolei umożliwia ich obsługę np. wyświetlenie zapasowego interfejsu. Dzięki temu, w przypadku wystąpienia błędu, interfejs się nie zawiesi.
+
+```js
+componentDidCatch(error, info) {
+  this.setState({
+      hasError: true,
+        errorMessage: error
+  })
+}
+```
+
+- Wykorzystuje się do kontroli błędów.
+- Wyłapuje błędy w dzieciach, ale nie w samym rodzicu.
+- error - rezultat toString() obiektu błędu
+- info - obiekt opisujący stack trace
+
+
+```js
+class ErrorBoundary extends React.Component {
+  state = { hasError: false };
+
+  componentDidCatch(error, info) {
+// Jeśli ta metoda została wywołana to gdzieś niżej w drzewie musiał wystąpić błąd
+// Ustanawiamy stan
+    this.setState({ hasError: true });
+// Można także wysłać raport o błędzie do serwisu analitycznego
+// logErrorToMyService(error, info);
+  }
+
+  render() {
+// Jeżeli wystąpił błąd...
+    if (this.state.hasError) {
+// Renderujemy fallback UI
+      return <h1>Something went wrong, please try again later :(</h1>;
+    }
+
+// Jeśli wszystko OK, renderujemy dzieci
+    return this.props.children;
   }
 }
 ```
