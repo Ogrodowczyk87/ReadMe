@@ -1,5 +1,6 @@
 - [**Browser DOM**](#browser-dom)
 - [**Virtual DOM**](#virtual-dom)
+- [pytania na temat formularzy](#pytania-na-temat-formularzy)
 
 
 >  :bulb: **DOM** - The Document Object Model
@@ -21,3 +22,16 @@ Wykorzystuje dobre praktyki aktualizacji rzeczywistego DOM (optymalizacja poprze
 > VDOM przekopiuje naprzyklad wszytskie elementy a tek ktory sie zmienil wyrendreuje na nowo.. taki szybki przyklad
 
 ---
+
+# pytania na temat formularzy
+
+Trzeba pamietac zeby przygotowac sie z tworzenia formularzy!
+
+:bulb: bez funkcji 
+
+```js
+const onSubmit = (event) => {
+    event.preventDefault()
+  }
+  ```
+  przeladuje storne poniewaz zachodzi bombelkowanie, bombelek idzie w gore az do obiektu **window** i przeladowuje strone.
