@@ -1,6 +1,7 @@
 - [**Browser DOM**](#browser-dom)
 - [**Virtual DOM**](#virtual-dom)
 - [pytania na temat formularzy](#pytania-na-temat-formularzy)
+- [useEffect !!!](#useeffect-)
 
 
 >  :bulb: **DOM** - The Document Object Model
@@ -34,4 +35,16 @@ const onSubmit = (event) => {
     event.preventDefault()
   }
   ```
-  przeladuje storne poniewaz zachodzi bombelkowanie, bombelek idzie w gore az do obiektu **window** i przeladowuje strone.
+  przeladuje storne poniewaz zachodzi bombelkowanie, bombelek idzie w gore az do obiektu **window** i przeladowuje strone.- [**Browser DOM**](#browser-dom)
+
+  # useEffect !!!
+
+```js
+useEffect(() => {
+  // kod ktory chcemy uruchomic
+
+  // opcjonalnie return function (jest to obcja ukryta)
+}, [])
+
+//dependency array mowi czego powinien sluchac zeby useEffect aby uruchomic kod, jezeli sotawimy pusty nie utzymamy efektu ktory chcemy uzyskac
+```

@@ -40,6 +40,19 @@
 - [Etap aktualizacji](#etap-aktualizacji)
 - [Etap odmontowywania](#etap-odmontowywania)
 - [Obsługa błędów renderowania](#obsługa-błędów-renderowania)
+- [React **Hooks**](#react-hooks)
+- [Hook useState](#hook-usestate)
+- [Różnice względem setState](#różnice-względem-setstate)
+- [Ograniczenia hooków](#ograniczenia-hooków)
+- [Hook useEffect](#hook-useeffect)
+- [Analogia do componentDidMount](#analogia-do-componentdidmount)
+- [Analogia do componentDidUpdate](#analogia-do-componentdidupdate)
+- [Lista zależności](#lista-zależności)
+- [Analogia do componentWillUnmount](#analogia-do-componentwillunmount)
+- [Kilka efektów](#kilka-efektów)
+- [Własne hooki](#własne-hooki)
+- [Hook useToggle](#hook-usetoggle)
+- [Hook useFormValue](#hook-useformvalue)
 
 
 # Single-Page Application
@@ -1539,3 +1552,444 @@ class ErrorBoundary extends React.Component {
   }
 }
 ```
+
+# React **Hooks**
+
+![react hooks](./Images//hooks-banner.jpg)
+
+Dotychczas komponenty funkcyjne wykorzystywaliśmy tylko do renderowania HTML w zależności od otrzymanych props. Nie było w nich ani stanu, ani metod cyklu życiowego. Były bardzo proste. Jeżeli w trakcie implementacji pojawiała się potrzeba posiadania stanu w komponencie funkcyjnym, to należało wówczas przepisać go na komponent klasowy. Zajomowało to niestety sporo czasu.
+
+Chęć ustandaryzowania oraz ujednolicenia sposobu pisania komponentów skłoniła deweloperów React do stworzenia hooków. Rozszerzyło to możliwości komponentów funkcyjnych. Hooki okazały się na tyle wygodne, że stały się podstawą programowania w React.
+
+Hooki rozwiązują w React wiele problemów, z którymi deweloperzy borykali się od początku istnienia biblioteki.
+
+- Trudność powtórnego wykorzystania logiki ze stanem między komponentami. W tym celu można tworzyć oddzielne hooki.
+- Mało intuicyjne wzorce "render-props" oraz "higher order component", które znacząco zmieniają strukturę komponentów i sprawiają, że kod jest trudniejszy do zrozumienia.
+- Trudność powtórnego wykorzystania logiki w kilku metodach cyklu życiowego (np. subskrypcja w componentDidMount i wypisanie się w componentWillUnmount).
+- Brak możliwości rozbicia dużego komponentu na mniejsze części, ze względu na logikę związaną ze składnią klasy.
+- Osobliwości związane z this oraz przywiązywaniem kontekstu do funkcji (bind).
+
+
+# Hook useState
+
+Pierwszy, prosty i najważniejszy hook. Tak jak sugeruje jego nazwa, jest on związany ze stanem. Właśnie dzięki niemu w komponentach funkcyjnych pojawił się wewnętrzny stan.
+
+
+```js
+import { useState } from "react";
+
+const App = () => {
+  const [value, setValue] = useState(0);
+
+  return (
+    <div>
+      {value}
+      <button type="button" onClick={() => setValue(value + 1)}>
+        Increment value by 1
+      </button>
+    </div>
+  );
+};
+
+```
+
+Wywołanie hooka useState tworzy stan i metodę, która pozwala na zmianę jego wartości. Hook przyjmuje wartość początkową jako argument, w naszym przypadku liczbę 0. W stanie może być przechowywany dowolny rodzaj danych.
+
+Hook useState zwraca tablicę składającą się z dwóch elementów:
+
+1 bieżąca wartość stanu  
+2 funkcja, która pozwala na aktualizację stanu. Można ją wykorzystać w dowolnym miejscu. Wykorzystując destrukturyzację można nadać dowolne nazwy zmiennym.
+
+>🔥 CZYM SĄ HOOKI?
+>
+>Hooki - to po prostu funkcje, z pomocą których można "doczepić się" do stanu i metod cyklu życiowego w komponentach funkcyjnych.
+
+# Różnice względem setState
+
+Funkcja aktualizacji stanu jest podobna do this.setState w klasach. Nie łączy ona jednak nowego i starego stanu razem, w przypadku gdy w stanie przechowywany jest obiekt. Ponad to, w klasowym komponencie możemy utworzyć tylko jeden wspólny stan, a w funkcyjnym dowolną ilość niezależnych od siebie fragmentów stanu.
+
+
+```js
+// ❌ Dozwolone, ale nie zalecane
+const App = () => {
+  const [state, setState] = useState({
+    username: "",
+    todos: [{ text: "Learn hooks" }],
+    isModalOpen: false,
+  });
+};
+
+// ✅ Dobrze
+const App = () => {
+  const [username, setUsername] = useState("");
+  const [todos, setTodos] = useState([{ text: "Learn hooks" }]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+};
+```
+
+
+>🔥 DOBRE PRAKTYKI
+>
+>Nie zapisuj w stanie obiektu z kilkoma niepowiązanymi ze sobą właściwościami. Lepiej jest utworzyć kilka niezależnych stanów i aktualizować je atomowo, jak w przykładzie powyżej. Nie wpływa to na wydajność.
+
+# Ograniczenia hooków
+Każdy hook można wywołać tylko w ciele komponentu funkcyjnego. Nie mogą one wykonywać się warunkowo tzn. wewnątrz cykli, warunków, zagnieżdżonych funkcji itp.
+
+```js
+// ❌ Zwróci błąd
+const App = () => {
+  if (isLoggedIn) {
+    const [username, setUsername] = useState("");
+  }
+
+  // ...
+};
+
+// ✅ Tak należy wykorzystywać hooki
+const App = () => {
+  const [username, setUsername] = useState("");
+};
+```
+
+# Hook useEffect
+
+Metody cyklu życiowego pozwalają nam wykonywać operacje w różnych stadiach życia komponentu. Na przykład kierować zapytania o dane z backendu, dodawać subskrypcje wydarzeń itd. Wszystko to nazywane jest "efektami ubocznymi" ("side effects"). Hook useEffect zawiera w sobie wywołania trzech metod cyklu życiowego – componentDidMount,componentDidUpdate, componentWillUnmount, dzięki czemu możemy wykonywać te "efekty" w komponentach funkcyjnych.
+
+```js
+import { useState, useEffect } from "react";
+
+const App = () => {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    document.title = `You clicked ${value} times`;
+  });
+
+  return (
+    <div>
+      <p>You clicked {value} times</p>
+      <button onClick={() => setValue(value + 1)}>Click me</button>
+    </div>
+  );
+};
+```
+
+useEffect(callback, deps) przyjmuje dwa argumenty:
+
+- allback - funkcja, wewnątrz której wykonuje się cała logika efektu. Na przykład zapytania do serwera, subskrypcja zdarzeń itp.
+- zależności - tablica zmiennych. Zmiana dowolnej z nich spowoduje wykonanie się efektu, czyli wywołanie callback'a. Może to być zmienna pochodząca ze stanu, propsów lub innna lokalna wartość komponentu.
+
+>:fire:ZALEŻNOŚCI
+>
+>Jeżeli nie przekazujemy tablicy zależności, efekt będzie wykonywać się przy każdym renderowaniu komponentu. Właśnie dzięki tablicy zależności możemy imitować metody cyklu życiowego.
+
+# Analogia do componentDidMount
+Hook useEffect uruchamia się nie tylko przy zmianie elementów tablicy zależności, lecz także w trakcie montowania komponentu. Jeżeli podamy jako drugi argument pustą tablicę, callback zostanie wywołany tylko w trakcie montowania komponentu, i nigdy więcej.
+
+```js
+const App = () => {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    console.log("Mounting phase");
+  }, []);
+
+  return <button onClick={() => setValue(value + 1)}>{value}</button>;
+};
+```
+
+# Analogia do componentDidUpdate
+W tablicy należy podać wszystkie zależności efektu. Zmiana dowolnej z nich spowoduje wykonanie się funkcji przekazanej do useEffect. Należy pamiętać, że mimo podania konkrentych wartości - określających kiedy useEffect ma się wykonać - zotanie on również zawsze wywołany podczas fazy montowania. Jest to zupełnie normalne w większości przypadków.
+
+```js
+const App = () => {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    console.log(value);
+    console.log("Updating phase");
+  }, [value]);
+
+  return <button onClick={() => setValue(value + 1)}>{value}</button>;
+};
+```
+
+# Lista zależności
+W aplikacji utworzonej przy pomocy narzędzia Create React App, ustawienia ESLint zawierają regułę react-hooks/exhaustive-deps. Weryfikuje ona czy talibca zależności zawiera wykorzystywane w useEffect zmienne. Jeżeli napisałeś efekt i linter wskazuje na problemy z listą zależności – twój efekt może być niestabilny i działać nieprzewidywalnie.
+
+```js
+const App = () => {
+  const [firstValue, setFirstValue] = useState(0);
+  const [secondValue, setSecondValue] = useState(0);
+
+// ❌ Źle. ESLint pokaże ostrzeżenie
+  useEffect(() => {
+    console.log(firstValue + secondValue);
+  }, [firstValue]);
+
+// ✅ Przekazane są wszystkie zależności wykorzystywane wewnątrz efektu
+  useEffect(() => {
+    console.log(firstValue + secondValue);
+  }, [firstValue, secondValue]);
+
+  return (
+    <>
+      <button onClick={() => setFirstValue(value => value + 1)}>
+        First: {firstValue}
+      </button>
+      <button onClick={() => setSecondValue(value => value + 1)}>
+        Second: {secondValue}
+      </button>
+    </>
+  );
+```
+
+# Analogia do componentWillUnmount
+Z funkcji przekazanej do useEffect możemy zwrócić kolejną funkcję i wykonać tzw. 'cleanup'. Funkcja ta zostanie wywołana podczas odmontowywania komponentu, ale także przed każdym wywołaniem danego efektu. W ten sposób można usunąć subskrypcję zdarzeń, zatrzymać timery i anulować zapytania HTTP.
+
+```js
+const App = () => {
+  useEffect(() => {
+    console.log("Mounting phase");
+
+    return () => {
+      console.log("Unmounting phase");
+    };
+  }, []);
+
+  return null;
+};
+```
+
+# Kilka efektów
+Hooki pozwalają rozdzielić i zgrupować logikę tworząc "efekt" pod konkretne zadania.
+
+```js
+class App extends Component {
+  handleKeyDown = e => {
+    console.log("keydown event: ", e);
+  };
+
+  componentDidMount() {
+    initThirdPartyLibrary();
+    document.addEventListener("keydown", this.handleKeyDown);
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.value !== this.props.value) {
+      // Do stuff when value prop changes
+    }
+
+    if (prevState.isLoggedIn !== this.state.isLoggedIn) {
+      // Do stuff when isLoggedIn state changes
+    }
+
+    if (prevProps.username !== this.props.username) {
+      // Fetch user when username prop changes
+      fetchUser(this.props.username);
+    }
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener("keydown", this.handleKeyDown);
+  }
+}
+```
+
+```js
+const App = () => {
+  // 1. Run effect only on mount to init some library
+  useEffect(() => {
+    initThirdPartyLibrary();
+  }, []);
+
+  // 2. Run effect only when username prop changes
+  useEffect(() => {
+    fetchUser(username);
+  }, [username]);
+
+  // 3. Run effect on value prop change
+  useEffect(() => {
+    // Do stuff when value prop changes
+  }, [value]);
+
+  // 4. Run effect on isLoggedIn state change
+  useEffect(() => {
+    // Do stuff when isLoggedIn state changes
+  }, [isLoggedIn]);
+
+  // 5. Run effect on mount and clean up on unmount
+  useEffect(() => {
+    const handleKeyDown = e => console.log("keydown event: ", e);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+};
+```
+
+# Własne hooki
+
+> :fire:UWAGA
+>
+>Tworzenie własnych hooków wymaga doświadczenia w pracy z hookami i React. Na ten moment nie staraj się skupiać na tworzeniu w projekcie własne hooków. Jeżeli widzisz wyraźną możliwość powtórnego wykorzystania kodu – wspaniale, wtedy utwórz hooka. W przeciwnym razie lepiej skoncentrować się na nauce podstawowego materiału i wykorzystaniu wbudowanych hooków React lub gotowych hooków z bibliotek jak np. react-use.
+
+Podstawowym zadaniem hooków jest umożliwienie powtórnego wykorzystania kodu (logiki). Tworzenie własnych hooków to proces wydobycia logiki komponentów do funkcji, co sprawi, że kod projektu będzie czystszy i łatwiejszy do zrozumienia.
+
+Hook to po prostu funkcja, której nazwa powinna zaczynać się od przedrostka use. Na jej podstawie React będzie decydował, czy to zwykła funkcja, czy hook (np useState, useEffect, useToggle, useDevice, useImages i tak dalej). Własne hooki tworzone są wewnątrz ciała komponentu lub w oddzielnych plikach. Mogą również wywoływać inne hooki (analogicznie jak komponenty).
+
+# Hook useToggle
+W poniższym przykładzie mamy dwa komponenty, które zawierają analogiczną logikę otwierania, zamykania oraz przełączania elementu interfejsu, na przykład okna modalnego.
+
+```js
+// ComponentA.jsx
+const ComponentA = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+
+  return (
+    <>
+      <button onClick={openModal}>Open modal</button>
+      <ModalA isOpen={isModalOpen} onClose={closeModal} />
+    </>
+  );
+};
+
+// ComponentB.jsx
+const ComponentB = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+
+  return (
+    <>
+      <button onClick={openModal}>Open modal</button>
+      <ModalB isOpen={isModalOpen} onClose={closeModal} />
+    </>
+  );
+};
+```
+
+Komponentów, które będą potrzebować analogicznej logiki może być w projekcie bardzo dużo. Stwórzmy więc własny hook useToggle, w którym ukryjemy stan i funkcje do jego aktualizacji. Pozwoli nam to na powtórne wykorzystanie kodu i ograniczenie jego ilości w ciele komponentów.
+
+src/hooks/useToggle.js
+
+```js
+export const useToggle = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const open = () => setIsOpen(true);
+  const close = () => setIsOpen(false);
+  const toggle = () => setIsOpen(isOpen => !isOpen);
+
+  return { isOpen, open, close, toggle };
+};
+```
+
+>:fire:SYGNTURA HOOKA
+>
+>Własny hook może przyjmować dowolne argumenty i zwracać cokolwiek. W naszym przypadku to obiekt z czterema właściwościami.
+
+Wykorzystując naszego hooka, kod komponentów będzie wyglądał następująco:
+
+```js
+// ComponentA.jsx
+import { useToggle } from "path/to/hooks/useToggle.js";
+
+const ComponentA = () => {
+  const { isOpen, open, close } = useToggle();
+
+  return (
+    <>
+      <button onClick={open}>Open modal</button>
+      <ModalA isOpen={isOpen} onClose={close} />
+    </>
+  );
+};
+
+// ComponentB.jsx
+import { useToggle } from "path/to/hooks/useToggle.js";
+
+const ComponentB = () => {
+  const { isOpen, open, close } = useToggle();
+
+  return (
+    <>
+      <button onClick={open}>Open modal</button>
+      <ModalB isOpen={isOpen} onClose={close} />
+    </>
+  );
+};
+
+```
+>:fire: Wynik  
+>Nawet w tak prostym przykładzie udało nam się znacznie zredukować powielanie kodu. Ssprawiliśmy, że komponenty są czystsze, a ewentualny refaktor kodu będzie łatwiejszy do wykonania.
+
+Jako, że hooki są zwykłymi funkcjami to można im przekazywać argumenty, np. początkową wartość stanu. Rozszerzmy useToggle tak, aby można było ustawić okno modalne jako początkowo otwarte. Natomiast domyślnie będzie zamknięte.
+
+```js
+// src/hooks/useToggle.js
+export const useToggle = (initialState = false) => {
+  const [isOpen, setIsOpen] = useState(initialState);
+  const open = () => setIsOpen(true);
+  const close = () => setIsOpen(false);
+  const toggle = () => setIsOpen(isOpen => !isOpen);
+
+  return { isOpen, open, close, toggle };
+};
+
+// MyComponent.jsx
+import { useToggle } from "path/to/hooks/useToggle.js";
+
+const MyComponent = () => {
+  const { isOpen, open, close } = useToggle(true);
+
+  return (
+    <>
+      <button onClick={open}>Open modal</button>
+      <Modal isOpen={isOpen} onClose={close} />
+    </>
+  );
+};
+```
+
+# Hook useFormValue
+Kolejnym przykładem własnego hooka może być useInputValue, który może nas wspomóc przy budowaniu formularzy.
+
+```js
+import { useState } from "react";
+
+export const useFormValue = initValue => {
+  const [value, setValue] = useState(initValue);
+
+  return {
+    value,
+    onChange: e => { 
+      setValue(e.target.value || e.target.innerText);
+    } 
+  };
+};
+```
+
+Mamy możliwość przekazania początkowej wartości (initValue), która zostanie zapisana przy pomocy useState. Następnie zwracamy informacje o value oraz funkcję onChange, która to ustawia lokalne value na podstawie e.target.value lub e.targer.innerText. Użycie wygląda następująco:
+
+```js
+import { useFormValue } from "./hooks/useFormValue"
+
+const App = () => {
+    const login = useFormValue("")
+    const age = useFormValue("initial value")
+    
+    return (
+        <>
+            <input type="text" {...login} />
+            <input type="text" {...age} />
+        </>
+    )
+}
+```
+
+Wykorzystanie hooka także jest bardzo przyjazne, ponieważ nie wymaga wiele od dewelopera. Pozwala nam natomiast przenieść część logiki, która się powtarza, do oddzielnego hooka.
+
+Poniżej link do wielu przykładów hooków, takich jak useCookie, useLocalStorage, useTitle czy kolejny useToggle. 
