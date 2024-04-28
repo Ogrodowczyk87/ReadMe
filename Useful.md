@@ -1,5 +1,6 @@
 - [Start nowego projektu](#start-nowego-projektu)
 - [Normalizacja stylu](#normalizacja-stylu)
+- [Biblioteka JS do haszowania API](#biblioteka-js-do-haszowania-api)
 
 
 # Start nowego projektu 
@@ -67,3 +68,7 @@ img {
   height: auto;
 }
 ```
+
+# Biblioteka JS do haszowania API
+
+https://www.npmjs.com/package/md5

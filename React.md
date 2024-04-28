@@ -53,6 +53,13 @@
 - [Własne hooki](#własne-hooki)
 - [Hook useToggle](#hook-usetoggle)
 - [Hook useFormValue](#hook-useformvalue)
+- [Kontekst i useContext](#kontekst-i-usecontext)
+- [Funkcja createContext()](#funkcja-createcontext)
+- [Komponent ```<Provider>```](#komponent-provider)
+- [Hook useContext()](#hook-usecontext)
+- [Customowy hook kontekstu](#customowy-hook-kontekstu)
+- [Kontekst użytkownika](#kontekst-użytkownika)
+- [Customowy komponent providera](#customowy-komponent-providera)
 
 
 # Single-Page Application
@@ -1993,3 +2000,226 @@ const App = () => {
 Wykorzystanie hooka także jest bardzo przyjazne, ponieważ nie wymaga wiele od dewelopera. Pozwala nam natomiast przenieść część logiki, która się powtarza, do oddzielnego hooka.
 
 Poniżej link do wielu przykładów hooków, takich jak useCookie, useLocalStorage, useTitle czy kolejny useToggle. 
+
+
+# Kontekst i useContext
+
+W React, dane zawsze przekazywane są z góry na dół przez propsy, a to czasami może być niewygodne. Przykładowo, dane globalne, które potrzebne są w wielu komponentach na różnych poziomach aplikacji (lokalizacja, dark/white theme (zmienna decydująca czy strona ma się wyświetlać w kolorystyce czarnej czy białej), stan autoryzacji i inne).
+
+![useCotext](./Images/props-context.png)
+
+Kontekst pozwala na przekazywanie danych głęboko w drzewie komponentów bez jawnego przekazywania propsów do elementów pośrednich na każdym poziomie.
+
+> :fire: UWAGA
+>
+>Nie wykorzystuj kontekstu, aby uniknąć przekazywania propsów kilka poziomów w dół. Ten mechanizm przeznaczony jest dla wąskiego spektrum zadań.
+
+# Funkcja createContext()
+
+```js
+import { createContext } from "react";
+
+const MyContext = createContext(defaultValue);
+```
+
+- Tworzy obiekt kontekstu zawierający parę komponentów <Context.Provider> (dostawca) i <Context.Consumer> (użytkownik).
+- Podczas renderowania, konsument odczyta bieżącą wartość kontekstu z najbliższego odpowiadającego dostawcy, znajdującego się wyżej w drzewie komponentów.
+- Argument defaultValue zostanie odczytany przez konsumenta, jeżeli nie odnajdzie on skorelowanego z sobą dostawcy. W praktyce można go nie wskazywać, gdyż próby otrzymania dostępu do niezdefiniowanego kontekstu nie mają sensu.
+- 
+# Komponent ```<Provider>```
+
+Wykorzystywany jest do tworzenia i przekazywania kontekstu. Pozwala konsumentom subskrybować zmiany kontekstu (zmiany referencji wartości context).
+
+```js
+import { createContext } from "react";
+import ReactDOM from "react-dom/client";
+
+const MyContext = createContext(defaultValue);
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <MyContext.Provider value={/* context value */}>
+    <App />
+  </MyContext.Provider>
+);
+```
+
+- value - wartość kontekstu, która będzie przekazana potomkom-konsumentom tego kontekstu.
+- Pozwala komponentom subskrybować zmiany kontekstu niezależnie od głębokości zagnieżdżenia.
+- Jeden provider może być związany z wieloma konsumentami.
+- Providery mogą być zagnieżdżane - umieszczone jeden w drugim.
+
+# Hook useContext()
+
+Zwraca bieżącą wartość kontekstu z najbliższego skorelowanego komponentu ```<Provider>```.
+
+```js
+import { createContext, useContext } from "react";
+
+const MyContext = createContext();
+
+const contextValue = useContext(MyContext);
+````
+
+- Wymaga jednego argumentu – referencji do utworzonego kontekstu.
+- Zwróci wartość kontekstu najbliższego providera.
+- Za każdym razem, kiedy wykryta zostanie nowa wartość kontekstu, useContext wymusi re-render komponentu.
+
+# Customowy hook kontekstu
+
+Niewygodnie jest za każdym razem importować odnośnik do obiektu kontekstu, dlatego dobrą praktyką jest utworzenie custom hook.
+
+```js
+import { createContext, useContext } from "react";
+
+const MyContext = createContext();
+
+// Importujemy i wykorzystujemy ten hook w komponentach
+export const useMyContext = () => useContext(MyContext);
+```
+
+# Kontekst użytkownika
+
+Napiszmy kontekst do przechowywania informacji o bieżącym użytkowniku.
+
+userContext.js
+
+```js
+import { createContext, useContext } from "react";
+
+export const UserContext = createContext();
+
+export const useUser = () => useContext(UserContext);
+```
+
+Obejmujemy w Provider całe drzewo komponentów. Można to zrobić w komponencie App lub bezpośrednio w głównym pliku index.js.
+
+```js
+
+
+import { UserContext } from "path/to/userContext.js";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <UserContext.Provider value={{ username: "Mango" }}>
+    <App />
+  </UserContext.Provider>
+);
+```
+
+Dodajemy w <App> komponent menu użytkownika, w którym wydobędziemy wartość kontekstu i wyświetlimy nazwę użytkownika.
+
+```js
+
+
+import { UserMenu } from "path/to/UserMenu";
+
+const App = () => {
+  return (
+    <div>
+      <UserMenu />
+    </div>
+  );
+};
+```
+
+Wykorzystujemy nasz custom hook useUser, aby wydobyć wartość kontekstu.
+
+```js
+
+
+import { useUser } from "path/to/userContext.js";
+
+export const UserMenu = () => {
+  const { username } = useUser();
+
+  return (
+    <div>
+      <p>{username}</p>
+    </div>
+  );
+};
+
+```
+
+# Customowy komponent providera
+
+W powyższym przykładzie wartość kontekstu była statyczna. Możemy jednak równie dobrze przekazywać tam dynamiczne wartości, a nawet stan. Stwórzmy teraz customowy komponent providera <UserProvider>, w którym zawrzemy logikę dotyczącą uwierzytelniania użytkownika (stan oraz metodę do jego zmiany).
+
+```js
+
+
+import { createContext, useContext, useState } from "react";
+
+const UserContext = createContext();
+
+export const useUser = () => useContext(UserContext);
+
+export const UserProvider = ({ children }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState(null);
+
+  const logIn = () => {
+    setIsLoggedIn(true);
+    setUsername("Mango");
+  };
+
+  const logOut = () => {
+    setIsLoggedIn(false);
+    setUsername(null);
+  };
+
+  return (
+    <UserContext.Provider value={{ isLoggedIn, username, logIn, logOut }}>
+      {children}
+    </UserContext.Provider>
+  );
+};
+````
+
+Owijamy całe drzewo komponentów customowym providerem. Można to zrobić w komponencie App lub bezpośrednio w głównym pliku index.js.
+
+```js
+import { UserProvider } from "path/to/userContext";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <UserProvider>
+    <App />
+  </UserProvider>
+);
+```
+
+W komponencie <App>, tak jak poprzednio, renderujemy komponent menu użytkownika.
+
+```js
+
+import { UserMenu } from "path/to/UserMenu";
+
+const App = () => {
+  return (
+    <div>
+      <UserMenu />
+    </div>
+  );
+};
+```
+
+Wykorzystujemy useUser
+
+```js
+
+import { useUser } from "path/to/userContext";
+
+export const UserMenu = () => {
+  const { isLoggedIn, username, logIn, logOut } = useUser();
+
+  return (
+    <div>
+      {isLoggedIn && <p>{username}</p>}
+      {isLoggedIn ? (
+        <button onClick={logOut}>Log out</button>
+      ) : (
+        <button onClick={logIn}>Log in</button>
+      )}
+    </div>
+  );
+};
+```
