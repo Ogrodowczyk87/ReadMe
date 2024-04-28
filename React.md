@@ -60,6 +60,13 @@
 - [Customowy hook kontekstu](#customowy-hook-kontekstu)
 - [Kontekst użytkownika](#kontekst-użytkownika)
 - [Customowy komponent providera](#customowy-komponent-providera)
+- [Hook useMemo](#hook-usememo)
+- [Hook useRef](#hook-useref)
+- [Tworzenie](#tworzenie)
+- [Cykl życiowy refa](#cykl-życiowy-refa)
+- [Brak reaktywności](#brak-reaktywności)
+- [Prosty odtwarzacz video](#prosty-odtwarzacz-video)
+- [Przekierowanie refów](#przekierowanie-refów)
 
 
 # Single-Page Application
@@ -2055,6 +2062,9 @@ Zwraca bieżącą wartość kontekstu z najbliższego skorelowanego komponentu `
 ```js
 import { createContext, useContext } from "react";
 
+
+// z reguly dajemy export const MyContest bo chcemy importowac
+// tutaj nie trzeba bo jest zdefiniowany w tym samym pliku
 const MyContext = createContext();
 
 const contextValue = useContext(MyContext);
@@ -2222,4 +2232,262 @@ export const UserMenu = () => {
     </div>
   );
 };
+```
+
+# Hook useMemo
+
+Czasami komponenty muszą wykonywać kosztowne obliczenia. Na przykład w trakcie pracy z dużą listą pracowników firmy. W takim przypadku można spróbować zwiększyć wydajność komponentu przy pomocy memoizacji.
+
+> :fire:MEMOIZACJA
+>
+>Metoda optymalizacji wykorzystywana do przyspieszenia pracy programów komputerowych. Rezultat wywołania funkcji z danymi argumentami jest zapisywany (cache). Kolejne wywołania funkcji z takimi samymi wartościami argumentów zwracają zapamiętany wynik i nie obliczają go ponownie.
+
+Hook useMemo() wykorzystuje koncepcję memoizacji, to znaczy zwraca zapamiętany (zkeszowany) wynik obliczeń. Może to zwiększyć wydajność aplikacji, jeśli jest stosowne do zapobiegania kosztownym obliczeniom podczas renderowania.
+
+```js
+const memoizedValue = React.useMemo(
+// compute
+  () => computeExpensiveValue(a, b),
+// deps
+  [a, b]
+);
+```
+
+Hook przyjmuje dwa argumenty – anonimową funkcję, która powinna zwracać wartość (to właśnie ona będzie memoizowna) i tablicę zależności (deps). Jeżeli tablica zależności nie została zdefiniowana, wartość będzie obliczać się przy każdym renderowaniu, co w rezultacie czyni wykorzystanie useMemo() bezsensownym.
+
+Funkcja przekazana do useMemo zostanie wywołana podczas pierwszego renderowania komponentu, a jej wynik zapamiętany i zwrócony z hooka. Jeżeli podczas następnych renderowań zależności nie zmienią się, hook nie wywoła ponownie funkcji, tylko zwróci zapisany wcześniej wynik. Jeżeli któraś z zależności się zmieniła, hook wywołuje funkcję ponownie, a następnie zapamiętuje i zwraca nową wartość.
+
+> :bulb:PODSUMUJMY
+>
+>- Memoizacja to zapamiętywanie wartości, aby nie trzeba było jej ciągle obliczać.
+>- Memoizację opłaca się stosować tylko dla kosztownych obliczeń.
+>- useMemo() wykonuje obliczenie wartości przynajmniej jeden raz.
+>- useMemo() zwraca zapamiętaną wartość.
+>- useMemo() uruchamia ponowne obliczenia tylko w przypadku aktualizacji którejś z zależności.
+>- Obowiązkowo należy przekazać zależności, w innym wypadku stosowanie useMemo() nie ma sensu.
+
+Przeanalizuj kod w następującym przykładzie. W stanie przechowywana jest tablica łańcuchów i wartość szukanego zapytania. [Opuszczamy kod dodania elementów do tablicy i zmiany wartości zapytania].
+
+```js
+const App = () => {
+  const [planets, setPlanets] = useState(["Earth", "Mars", "Jupiter", "Venus"]);
+  const [query, setQuery] = useState("");
+
+  const filteredPlanets = planets.filter(planet => planet.includes(query));
+
+  return (
+    <div>
+      {filteredPlanets.map(planet => (
+        <div key={planet}>{planet}</div>
+      ))}
+    </div>
+  );
+};
+```
+
+Za każdym razem, gdy zmieni się wartość planets lub query, komponent będzie renderowany ponownie. W rezultacie wartość filteredPlanets zostanie obliczona ponownie. To zupełnie normalne! W takim przypadku niepotrzebna jest żadna memoizacja.
+
+Teraz wyobraź sobie, że komponent <App> zawiera dodatkowy stan lub otrzymuje jakiś props, nie wpływający na planety.
+
+```js
+const App = ({ someProp }) => {
+  const [planets, setPlanets] = useState(["Earth", "Mars", "Jupiter", "Venus"]);
+  const [query, setQuery] = useState("");
+  const [clicks, setClicks] = useState(0);
+
+  const filteredPlanets = planets.filter(planet => planet.includes(query));
+
+  return (
+    <div>
+      <div>Some prop: {someProp}</div>
+      <button onClick={() => setClicks(clicks + 1)}>
+        Number of clicks: {clicks}
+      </button>
+      <div>
+        {filteredPlanets.map(planet => (
+          <div key={planet}>{planet}</div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+Za każdym razem, gdy zmienia się stan clicks lub props someProp, komponent będzie renderowany ponownie. Doprowadzi to do ponownego obliczenia filteredPlanets i przerenderowania drzewa komponentów, mimo iż wartości planets i query nie zmieniły się! W takim wypadku może być warto memoizować obliczanie filteredPlanets.
+
+```js
+import { useMemo } from "react";
+
+const App = ({ someProp }) => {
+  const [planets, setPlanets] = useState(["Earth", "Mars", "Jupiter", "Venus"]);
+  const [query, setQuery] = useState("");
+  const [clicks, setClicks] = useState(0);
+
+  const filteredPlanets = useMemo(
+    () => planets.filter(planet => planet.includes(query)),
+    [planets, query]
+  );
+
+  return (
+    <div>
+      <div>Some prop: {someProp}</div>
+      <button onClick={() => setClicks(clicks + 1)}>
+        Number of clicks: {clicks}
+      </button>
+      <div>
+        {filteredPlanets.map(planet => (
+          <div key={planet}>{planet}</div>
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+
+To samo dotyczy kosztownych operacji, na przykład wykorzystanie długiego cyklu for. Kosztowne obliczenia mogą być stratą czasu, co z pewnością doprowadzi do pogorszenia responsywności interfejsu.
+
+>:bulb:WIĘCEJ NIE ZNACZY LEPIEJ
+>
+>Nie trzeba memoizować wszystkiego, gdyż - paradoksalnie - może to doprowadzić do utraty wydajności. Memoizacja również zajmuje pamięć obliczeniową. Ciągłe wykonywanie prostych obliczeń jest wciąż "tańsze" niż ich memoizacja. Używaj więc useMemo() z rozwagą, a doświadczenie przyjdzie z czasem.
+
+:fire::fire: **W najnowszym React nie memonizujemy samej fukcji tylko
+wyniki jakie sa zwracane**:fire::fire: 
+
+
+# Hook useRef
+
+Ref pozwala otrzymać bezpośredni dostęp do wyrenderowanego węzła DOM oraz przypisanych do niego metod. Jest również wykorzystywany jako odpowiednik pól publicznych, które definiowaliśmy na klasowych komponentach React. Przypisanie wartości do zmiennej (const lub let) w ramach komponentu funkcyjnego nigdy nie będzie stabilne podczas re-renderów. Z ratunkiem przychodzi useRef, który pozwala na przetrzymywanie przypisanej wartości pomimo re-renderów komponentu.
+
+# Tworzenie
+
+Obiekt 'ref' tworzy się hookiem useRef(). Obiekt ten ma w momencie utworzenia jedną właściwość: 'current'. React zadba, aby każda wartość przypisana do ref.current była stabilna i nie zmieniała się podczas re-renderów.
+
+Przypisanie referencji elementu DOM do refa wykonuje się z użyciem atrybutu ref (skrót od reference), dostępnego na każdym elemencie DOM.
+
+```js
+import { useRef } from "react";
+
+const App = () => {
+  const btnRef = useRef();
+
+  return <button ref={btnRef}>Button with ref</button>;
+};
+```
+
+# Cykl życiowy refa
+React przypisze właściwości current referencję do elementu DOM, po tym jak komponent zostaje zamontowany i null po odmontowaniu. Dlatego wartość refa dostępna jest dopiero **po zamontowaniu**.
+
+```js
+import { useState, useRef } from "react";
+
+const App = () => {
+  const [value, setValue] = useState(0);
+  const btnRef = useRef();
+
+  // null przy pierwszym renderowaniu
+  // referencja do elementu DOM przy wszystkich kolejnych
+  console.log(btnRef.current);
+
+  useEffect(() => {
+    // Efekt wykonuje się zawsze po zamontowaniu komponentu,
+    // dlatego ref wewnątrz będzie posiadał referencję do elementu DOM
+    console.log(btnRef.current);
+  });
+
+  const handleClick = () => {
+    // Obsługa kliknięć również odbywa się po zamontowaniu,
+    // dlatego ref wewnątrz będzie posiadał referencję do elementu DOM
+    console.log(btnRef.current);
+  };
+
+  return (
+    <>
+      <button onClick={() => setValue(value + 1)}>
+        Update value to trigger re-render
+      </button>
+      <button ref={btnRef} onClick={handleClick}>
+        Button with ref
+      </button>
+    </>
+  );
+};
+```
+
+# Brak reaktywności
+Refy to nie stan, nie są reaktywne, dlatego zmiana wartości refa nie wpływa na aktualizację komponentu i nie wywołuje ponownego renderowania.
+
+```js
+import { useEffect, useRef } from "react";
+
+const App = () => {
+  const valueRef = useRef(0);
+
+  useEffect(() => {
+    // Wykona się tylko jeden raz po zamontowaniu.
+    // Późniejsza aktualizacja wartości refa nie wywoła aktualizacji komponentu
+    console.log(valueRef.current);
+  });
+
+  const handleClick = () => {
+    valueRef.current += 1;
+  };
+
+  return <button onClick={handleClick}>Click to update ref value</button>;
+};
+```
+
+>:bulb:WARTOŚĆ POCZĄTKOWA
+>
+>Refy można wykorzystywać także jako magazyn arbitralnych wartości, niezmieniających się między renderami komponentu. W przykładzie poniżej, do hooka useRef przekazano wartość początkową właściwości current - liczbę 0.
+
+```js
+const valueRef = useRef(0);
+```
+# Prosty odtwarzacz video
+Utwórzmy komponent Player do odtwarzania wideo, wykorzystując natywny tag <video>. Aby włączyć i zatrzymać odtwarzanie należy wywołać metody HTMLMediaElement.play() i HTMLMediaElement.pause(), gdzie HTMLMediaElement to element <video>. Wykorzystujemy ref w celu otrzymania dostępu do elementu DOM i jego metod.
+
+```js
+import { useRef } from "react";
+
+const Player = ({ source }) => {
+  const playerRef = useRef();
+  const play = () => playerRef.current.play();
+  const pause = () => playerRef.current.pause();
+
+  return (
+    <div>
+      <video ref={playerRef} src={source}>
+        Sorry, your browser does not support embedded videos.
+      </video>
+      <div>
+        <button onClick={play}>Play</button>
+        <button onClick={pause}>Pause</button>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  return <Player source="http://media.w3.org/2010/05/sintel/trailer.mp4" />;
+};
+```
+
+# Przekierowanie refów
+Dotychczas przkazywaliśmy refy to parametru ref na elementach DOM, a co gdybyśmy chcieli przekazać go do komponentu React? W przypadku komponentu klasowego nie będzie z tym problemu, natomiast komponenty funkcyjne nie mają w React takiej możliwości, przynajmniej domyślnie. Z pomocą przychodzi funkcja forwardRef, która automatycznie przekazuje propsy otrzymane od komponentu rodzica do jego elementów dzieci. Dzięki temu możemy przypisać ref - zadeklarowany w rodzicu - do elementu znajdującego się w komponencie dziecku, uzyskując w ten sposób referencję do elementu dziecka, dostępną w rodzicu.
+
+```js
+import { forwardRef, useRef, useEffect } from "react";
+
+const CustomButton = forwardRef((props, ref) => (
+  <button ref={ref}>{props.children}</button>
+));
+
+const App = () => {
+  const btnRef = useRef();
+
+  useEffect(() => btnRef.current.focus(), []);
+
+  return <CustomButton ref={btnRef}>Button with forwarded ref</CustomButton>;
+};
+
 ```

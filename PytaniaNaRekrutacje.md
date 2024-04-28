@@ -2,6 +2,9 @@
 - [**Virtual DOM**](#virtual-dom)
 - [pytania na temat formularzy](#pytania-na-temat-formularzy)
 - [useEffect !!!](#useeffect-)
+- [useCotext](#usecotext)
+- [useMemo](#usememo)
+- [useRef](#useref)
 
 
 >  :bulb: **DOM** - The Document Object Model
@@ -48,3 +51,19 @@ useEffect(() => {
 
 //dependency array mowi czego powinien sluchac zeby useEffect aby uruchomic kod, jezeli sotawimy pusty nie utzymamy efektu ktory chcemy uzyskac
 ```
+
+# useCotext
+
+Store to miejsce dzieki ktoremu provider pozwala sie dostac
+do zmiennych dostepnych globalnie.
+
+
+# useMemo
+czy zawsze stosujemy memo i czy to jesgt takie zajebiste :)
+
+Jest bezsensu wtedy kiedy opercja jest zbyt prosta, i wykonanie jej jest szybsze niz sprawdzenie jej w cache-u w
+tedy memonizacja nie ma sensu.
+
+# useRef 
+
+Odchodzi sie juz od niego. Problem polega na tym ze Ui nie zostanie przeladowany.
