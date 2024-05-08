@@ -67,6 +67,15 @@
 - [Brak reaktywności](#brak-reaktywności)
 - [Prosty odtwarzacz video](#prosty-odtwarzacz-video)
 - [Przekierowanie refów](#przekierowanie-refów)
+- [Routing](#routing)
+- [Struktura łańcucha URL](#struktura-łańcucha-url)
+- [Routing w React](#routing-w-react)
+- [Komponent BrowserRouter](#komponent-browserrouter)
+- [Komponenty Route i Routes](#komponenty-route-i-routes)
+- [Strona błędu nawigacji](#strona-błędu-nawigacji)
+- [Komponenty Link и NavLink](#komponenty-link-и-navlink)
+- [Parametry URL](#parametry-url)
+- [Hook useParams](#hook-useparams)
 
 
 # Single-Page Application
@@ -2491,3 +2500,291 @@ const App = () => {
 };
 
 ```
+
+# Routing
+
+Elementem wyróżniającym aplikację webową, w porównaniu do desktopowej, jest obecność URL. Zmieniając go, użytkownik może wyświetlać kolejne części aplikacji. Użytkownik może zapisać dany adres w postaci zakładki lub przesłać go do innego użytkownika, który dzięki temu zobaczy ten sam interfejs (z wyjątkiem danych prywatnych).
+
+Routing - struktura nawigacji
+
+Ścieżka / Route - pojedynczy element nawigacyjny
+
+>:bulb:W PIERWSZEJ KOLEJNOŚCI
+>
+>Routing nie jest "miłym dodatkiem" do aplikacji. Przeciwnie, strukturę nawigacji i zestaw podstron należy przemyśleć na samym początku.
+
+
+# Struktura łańcucha URL
+
+Analogią łańcucha URL może być adres, pod którym mieszkasz: ulica, dom, mieszkanie. Dla każdego stanu interfejsu (tego co widzi użytkownik) powinien istnieć adres URL.
+
+Przeanalizujmy z jakich części może składać się przykładowy URL.
+
+![lanczuch url](./Images//url-string.jpg)
+
+- https:// - protokół
+- mysite.com/ - host
+- books/e3q76gm9lzk - ścieżka, to gdzie znajdujemy się w aplikacji
+- e3q76gm9lzk - parametr url. Parametry bywają dynamiczne lub statyczne
+- ? - symbol początku łańcucha zapytania (search query)
+- ?category=adventure&status=unread - łańcuch zapytania (search query)
+- category=adventure - para parametr=wartość
+- & - symbol "I", rozdziela parametry łańcucha zapytania
+- #comments - kotwica (hash), określa położenie na stronie
+
+# Routing w React
+
+W React nie ma wbudowanego modułu routingu, dlatego najczęściej wykorzystuje się React Router. Analogicznie jak React, dostarcza nam zestawu prymitywów do tworzenia interfejsu użytkownika. Zawiera również zestaw hooków do tworzenia routingu, zarządzania historią nawigacji użytkownika i wyświetlania różnych komponentów w zależności od obecnej wartości URL w łańcuchu adresowym przeglądarki.
+
+```
+npm install react-router-dom
+```
+
+# Komponent BrowserRouter
+
+BrowserRouter - centrum sterowania routingiem, które kryje w sobie całą logikę współpracy z historią przeglądarki. Tworzy router i obiekt historii nawigacji, aby synchronizować interfejs z adresem URL. Wykorzystując kontekst React, przekazuje informację o bieżącym stanie historii nawigacji wszystkim potomkom. Na początku wystarczy owinąć komponentem BrowserRouter całą aplikację.
+
+>:bulb: Komponent BrowserRouter to Router, który używa interfejsu API historii HTML5 (pushState, replaceState i zdarzenie popstate), aby zapewnić synchronizację interfejsu użytkownika z adresem URL. Dlatego też korzystamy już z rozbudowanego komponentu BrowserRouter.
+
+src/index.js
+
+```js
+import { BrowserRouter } from "react-router-dom";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+```
+
+W kolejnej części modułu przeanalizujemy jak opisywać routing aplikacji.
+
+Komponent BrowserRouter możemy także zapisać używając nowego podejścia, z wykorzystaniem hooków i RouterProvider , natomiast jest to rozwiązanie jeszcze mało popularne(do dupy nikt tego nie uzywa xD)
+
+```js
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+} from "react-router-dom";
+
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path="/" element={<Root />}>
+      <Route path="dashboard" element={<Dashboard />} />
+      {/* ... etc. */}
+    </Route>
+  )
+);
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);
+```
+
+# Komponenty Route i Routes
+
+Komponent Route pozwala powiązać określony URL z konkretnym komponentem. Przykładowo, jeśli chcemy wyświetlić komponent About, kiedy użytkownik przechodzi na ścieżkę /about, należy opisać taką ścieżkę następująco:
+
+```js
+<Route path="/about" element={<About />} />
+```
+
+Wartością propsu element może być dowolny, poprawny JSX, ale w praktyce wykorzystywane są zawsze komponenty.
+
+?:bulb:JAK TO DZIAŁA
+>
+>Komponent Route zawsze musi coś wyrenderować: komponent wskazany w propsie element jeśli path pokrywa się z bieżącą wartością segmentu pathname w polu adresowym przeglądarki lub null, jeśli się nie pokrywa.
+
+Możemy zdefinować dowolną ilość ścieżek, ale minimum to jedna na każdą stronę aplikacji. Przypuśćmy, że tworzymy aplikację sklepu z odzieżą:
+
+```js
+
+import { Routes, Route } from "react-router-dom";
+import Home from "path/to/pages/Home";
+import About from "path/to/pages/About";
+import Products from "path/to/pages/Products";
+
+export const App = () => {
+  return (
+    <div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/products" element={<Products />} />
+      </Routes>
+    </div>
+  );
+};
+```
+
+Grupę ścieżek musimy owinąć w komponent Routes, nawet jeśli ścieżka jest tylko jedna. Route nigdy nie może być wykorzystywany poza Routes. Komponent Routes odpowiada za logikę wyboru najlepiej pasującego Route dla bieżącej wartości URL w polu adresowym przeglądarki.
+
+>:bulb:KOMPONENTY STRON
+>
+>Wiesz już, że jedną z konwencji struktury plików w aplikacji jest zapisywanie wszystkich komponentów w folderze src/components. Komponent strony to również zwykły komponent React, ale dla wygody i ustrukturyzowania, takie komponenty przechowujemy oddzielnie w folderze src/pages.
+
+# Strona błędu nawigacji
+
+Biorąc pod uwagę dotychczasowy opis routingu sklepu internetowego, kiedy użytkownik przejdzie po odnośniku na adres URL /non-existing-route (lub na dowolny inny, który nie istnieje w naszej aplikacji) - zobaczy pustą zakładkę przeglądarki bez żadnej zwartości. Dzieje się tak, gdyż żaden z opisanych przez nas Route nie pasuje do tego URL. Powinniśmy informować użytkownika o tym, że adres który wybrał nie istnieje (nie został znaleziony). W tym celu na samym końcu listy ścieżek dodamy jeszcze jeden Route, który będzie pokrywał się z dowolnym URL, ale zostanie wybrany tylko wtedy, gdy żadna inna ścieżka nie będzie pasować.
+
+```js
+
+import { Routes, Route } from "react-router-dom";
+import Home from "path/to/pages/Home";
+import About from "path/to/pages/About";
+import Products from "path/to/pages/Products";
+import NotFound from "path/to/pages/NotFound";
+
+const App = () => {
+  return (
+    <div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
+};
+```
+
+Symbol * w propsie path wskazuje na to, że ścieżka ta może pokrywać się z dowolną wartością URL. Jeśli żaden wcześniejszy Route nie będzie pasował, ostatni wyświetli użytkownikowi stronę z wiadomością, że pod danym adresem nie znajduje się żadna część aplikacji.
+
+# Komponenty Link и NavLink
+
+Teraz przeanalizujemy jak tworzyć odnośniki (linki) do różnych stron naszej aplikacji. W celu utworzenia nawigacji w aplikacji Reactowej nie możemy korzystać ze zwykłego tagu href="/about">. Po kliknięciu w taki odnośnik przeglądarka przeładuje stronę, zamiast zmienić URL na obecnej stronie i pozwolić routerowi wykonać nawigację u klienta.
+
+Do tworzenia odnośników wykorzystuje się komponenty Link i NavLink. Renderują one tag , ale standardowe zachowanie odnośnika jest zmienione tak, aby po kliknięciu URL aktualizował się bez przeładowania strony.
+
+```js
+<nav>
+  <Link to="/">Home</Link>
+  <Link to="/about">About</Link>
+  <Link to="/products">Products</Link>
+</nav>
+```
+
+Komponent NavLink różni się tylko tym, że dostaje klasę .active kiedy bieżący URL pokrywa się z wartością propsa to. Można to wykorzysta do zmiany jego stylów.
+
+```js
+
+import { Routes, Route, NavLink } from "react-router-dom";
+import styled from "styled-components";
+import Home from "path/to/pages/Home";
+import About from "path/to/pages/About";
+import Products from "path/to/pages/Products";
+
+const StyledLink = styled(NavLink)`
+  color: black;
+
+  &.active {
+    color: orange;
+  }
+`;
+
+export const App = () => {
+  return (
+    <div>
+      <nav>
+        <StyledLink to="/" end>
+          Home
+        </StyledLink>
+        <StyledLink to="/about">About</StyledLink>
+        <StyledLink to="/products">Products</StyledLink>
+      </nav>
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/products" element={<Products />} />
+      </Routes>
+    </div>
+  );
+};
+```
+
+# Parametry URL
+
+Dynamiczne parametry URL są podobne do parametrów funkcji - zawsze mają jedną nazwę, ale mogą mieć różne wartości. Pozwalają zdefiniować szablon adresu URL, którego części mogą mieć dynamiczną wartość. Na przykład, nie ma sensu określanie oddzielnej ścieżki dla każdego posta na blogu - mogą ich być przecież tysiące. Jeśli chodzi o strukturę, poszczególne strony postów będą identyczne. Różnić się będzie nazwa, obrazek, autor, tekst itp. Dlatego zamiast określać dokładną ścieżkę dla każdego artykułu, możemy zadeklarować jedną - z dynamicznym parametrem. Na jego podstawie będziemy określać, jaki post należy wyświetlić w danym momencie. Dynamiczne parametry URL zapisujemy poprzedając nazwę parametru dwukropkiem  ----> : 
+
+```js
+<Route path="/blog/:postId" element={<BlogPost />} />
+```
+
+Za każdym razem, gdy użytkownik będzie odwiedzać adres odpowiadający dynamicznej ścieżki ```/blog/:postId``` (np. ```/blog/react-fundamentals``` lub ```/blog/top-5-css-tricks```), będzie mu się wyświetlała odpowiednia strona postu.
+
+>:bulb:NAZWA PARAMETRU
+>
+>Możemy nazywać parametry URL dowolnie, jednak warto zadbać o odpowiednie oddanie jego znaczenia.
+
+Dodajmy do naszej aplikacji ścieżkę strony jednego produktu - ```/products/:productId```. Jest to oddzielna strona, w żaden sposób niezwiązana z ```/products``` - stroną wyświetlania wszystkich produktów.
+
+```js
+
+import { Routes, Route, Link } from "react-router-dom";
+import Home from "path/to/pages/Home";
+import About from "path/to/pages/About";
+import Products from "path/to/pages/Products";
+import NotFound from "path/to/pages/NotFound";
+import ProductDetails from "path/to/pages/ProductDetails";
+
+export const App = () => {
+  return (
+    <div>
+      <nav>
+        <Link to="/">Home</Link>
+        <Link to="/about">About</Link>
+        <Link to="/products">Products</Link>
+      </nav>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/:productId" element={<ProductDetails />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
+};
+```
+
+>:bulb:UNIKALNOŚĆ WARTOŚCI
+>
+>Wartość parametru URL powinna być unikalna wewnątrz kolekcji, dlatego najczęściej wykorzystywane są identyfikatory/klucze obiektów (id), które ustanawia baza danych (liczby lub łańcuchy). Z tego względu adres najczęściej ma postać jak /products/1, /proudcts/2 itd.
+
+# Hook useParams
+
+Zwraca obiekt ze wszystkimi dynamicznymi parametrami, które istnieją w aktualnym adresie URL, ale tylko te które zostały zdefiniowane w ramach Routes. Na przykład, jeśli zadeklarowana została następująca ścieżka /books/:genreId/:authorName, i użytkownik znajduje się pod adresem /books/adventure/herman-melville, hook zwróci obiekt klucz-wartość postaci: genreId: adventure authorName: herman-melville.
+
+```js
+const { genreId, authorName } = useParams();
+console.log(genreId, authorName);// adventure, herman-melville
+```
+
+W celu otrzymania wartości dynamicznego paramteru URL, dla strony szczegółów produktu, wykorzystujemy hook useParams w komponencie strony produktu.
+
+```src/pages/ProductDetails.jsx```
+
+```js
+import { useParams } from "react-router-dom";
+
+const ProductDetails = () => {
+  const { productId } = useParams();
+  return <div>Now showing product with id - {productId}</div>;
+};
+```
+
+>:bulb: Co dalej?
+>
+>
+>Mając wartość parametru możemy wykonać zapytanie do API i otrzymać pełną informację o produkcie, zgodnie z jego identyfikatorem, po czym wyrenderować jego stronę
+
+Przeanalizuj kod działającej aplikacji naszego sklepu, z omówionymi dotychczas zagadnieniami.
