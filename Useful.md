@@ -1,6 +1,7 @@
 - [Start nowego projektu](#start-nowego-projektu)
 - [Normalizacja stylu](#normalizacja-stylu)
 - [Biblioteka JS do haszowania API](#biblioteka-js-do-haszowania-api)
+- [Redux od czego zaczac](#redux-od-czego-zaczac)
 
 
 # Start nowego projektu 
@@ -45,3 +46,9 @@ npm
 # Biblioteka JS do haszowania API
 
 https://www.npmjs.com/package/md5
+
+# Redux od czego zaczac
+
+- provider na app po pierwsze
+- potem przechodzimy do stora i w zaleznosci co chcemy tast jakis np taskow
+- wtedy tworzymy slica od taska createSlice i tworzymy reducery i wyciagamy akcje i reducer i wrzucamy do stora

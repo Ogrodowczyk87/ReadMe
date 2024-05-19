@@ -5,6 +5,7 @@
 - [useCotext](#usecotext)
 - [useMemo](#usememo)
 - [useRef](#useref)
+- [Gdzie stosowac Redux-a](#gdzie-stosowac-redux-a)
 
 
 >  :bulb: **DOM** - The Document Object Model
@@ -67,3 +68,7 @@ tedy memonizacja nie ma sensu.
 # useRef 
 
 Odchodzi sie juz od niego. Problem polega na tym ze Ui nie zostanie przeladowany.
+
+# Gdzie stosowac Redux-a
+
+Na pewno warto to przenalizowac z architektem oprogramowania, na pewno w duzych aplikacjach ktore zarzadzaja duzym stanem, magazynowym. W maplych aplikacjach wystrczy context

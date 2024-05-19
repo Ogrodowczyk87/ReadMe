@@ -2788,3 +2788,5 @@ const ProductDetails = () => {
 >Mając wartość parametru możemy wykonać zapytanie do API i otrzymać pełną informację o produkcie, zgodnie z jego identyfikatorem, po czym wyrenderować jego stronę
 
 Przeanalizuj kod działającej aplikacji naszego sklepu, z omówionymi dotychczas zagadnieniami.
+
+
