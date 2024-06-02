@@ -6,6 +6,7 @@
 - [useMemo](#usememo)
 - [useRef](#useref)
 - [Gdzie stosowac Redux-a](#gdzie-stosowac-redux-a)
+- [Czym sie rozni local storage od session storage](#czym-sie-rozni-local-storage-od-session-storage)
 
 
 >  :bulb: **DOM** - The Document Object Model
@@ -72,3 +73,7 @@ Odchodzi sie juz od niego. Problem polega na tym ze Ui nie zostanie przeladowany
 # Gdzie stosowac Redux-a
 
 Na pewno warto to przenalizowac z architektem oprogramowania, na pewno w duzych aplikacjach ktore zarzadzaja duzym stanem, magazynowym. W maplych aplikacjach wystrczy context
+
+# Czym sie rozni local storage od session storage
+
+Session starage storage sesji bo wyczysci po zamknieci a local sgorage mi definujemy jak dlugo ma istniec

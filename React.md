@@ -76,6 +76,7 @@
 - [Komponenty Link и NavLink](#komponenty-link-и-navlink)
 - [Parametry URL](#parametry-url)
 - [Hook useParams](#hook-useparams)
+- [Zagnieżdżone ścieżki](#zagnieżdżone-ścieżki)
 
 
 # Single-Page Application
@@ -2789,4 +2790,106 @@ const ProductDetails = () => {
 
 Przeanalizuj kod działającej aplikacji naszego sklepu, z omówionymi dotychczas zagadnieniami.
 
+# Zagnieżdżone ścieżki
 
+Zagnieżdżone ścieżki pozwalają opisywać logikę "strony w stronie" (sytuacja kiedy dla jednego adresu URL, oprócz komponentu-rodzica całej strony, będzie wyświetlać się jeszcze zagnieżdżony komponent-dziecko).
+
+Na przykład, chcielibyśmy aby na każdej ze stron /about/mission, /about/team i /about/reviews wyświetlał się komponent <About /> oraz dodatkowa, bardziej szczegółowa informacja w zależności od URL (artykuł o misji naszej firmy - 'mission', galeria z informacjami o pracownikach - 'team' i recenzje użytkowników ' reviews').
+
+```js
+// ❌ Nieprawidłowo
+<Route path="/about" element={<About />} />
+<Route path="/about/mission" element={<Mission />} />
+<Route path="/about/team" element={<Team />} />
+<Route path="/about/reviews" element={<Reviews />} />
+```
+
+Jeżeli przygotujemy Routing w ten sposób, to otrzymamy cztery niezależne strony. Na /about będzie wyświetlać się tylko strona z informacjami, a na about/team jedynie galeria pracowników.
+
+Wykorzystajmy składnię deklarowania zagnieżdżonej ścieżki, której komponent będzie wyświetlać się wewnątrz strony-rodzica.
+
+```js
+// ✅ Prawidłowo
+<Route path="/about" element={<About />}>
+  <Route path="mission" element={<Mission />} />
+  <Route path="team" element={<Team />} />
+  <Route path="reviews" element={<Reviews />} />
+</Route>
+```
+
+Zwróć uwagę na kilka szczegółów:
+
+- Deklaratywnie umieściliśmy ścieżki-dzieci wewnątrz rodzica Route. Właśnie taka składnia wskazuje na ścieżkę zagnieżdżoną, której komponent będzie wyświetlał się gdzieś wewnątrz komponentu rodzica.
+- Wartość propsa path w zagnieżdżonej ścieżce definiuje się w relacji/odniesieniu do rodzica. Właśnie dlatego przekazaliśmy wartość path="mission", a nie pełną ścieżkę path="/about/mission".
+- Ścieżki relatywne zapisuje się bez poprzedzającego symbolu /, to znaczy path="mission", а nie path="/mission". Jeżeli dodalibyśmy slash, to utworzylibyśmy oddzielną ścieżkę /mission i zepsulibyśmy logikę Routingu.
+
+Pełna konfiguracja Routingu naszej aplikacji będzie wyglądała tak.
+
+```js
+import { Routes, Route, Link } from "react-router-dom";
+import Home from "path/to/pages/Home";
+import About from "path/to/pages/About";
+import Products from "path/to/pages/Products";
+import NotFound from "path/to/pages/NotFound";
+import ProductDetails from "path/to/pages/ProductDetails";
+import Mission from "path/to/components/Mission";
+import Team from "path/to/components/Team";
+import Reviews from "path/to/components/Reviews";
+
+export const App = () => {
+  return (
+    <div>
+      <nav>
+        <Link to="/">Home</Link>
+        <Link to="/about">About</Link>
+        <Link to="/products">Products</Link>
+      </nav>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />}>
+          <Route path="mission" element={<Mission />} />
+          <Route path="team" element={<Team />} />
+          <Route path="reviews" element={<Reviews />} />
+        </Route>
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/:productId" element={<ProductDetails />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
+};
+```
+Ostatnią kwestią jest wskazanie, w którym miejscu, w komponencie Route-rodzica About, chcemy renderować zagnieżdzone Route-dzieci. W tym celu wykorzystywany jest komponent Outlet.
+
+```js
+
+
+import { Link, Outlet } from "react-router-dom";
+
+export const About = () => {
+  return (
+    <div>
+      <h1>About page</h1>
+      <ul>
+        <li>
+          <Link to="mission">Read about our mission</Link>
+        </li>
+        <li>
+          <Link to="team">Get to know the team</Link>
+        </li>
+        <li>
+          <Link to="reviews">Go through the reviews</Link>
+        </li>
+      </ul>
+      <Outlet />
+    </div>
+  );
+};
+```
+
+Jeśli URL pokryje się z wartością propsa path zagnieżdżonej ścieżki, Outlet wyrenderuje jego komponent. Natomiast dla ścieżki/about Outlet zwróci null, co nie wpłynie negatywnie na układ komponentu-rodzica.
+
+
+>:bulb:WZGLĘDNE ODNOŚNIKI
+>
+>Zwróć uwagę na wartość propsa to komponentu Link w przykładzie powyżej. Tak jak path zagnieżdżonej ścieżki, wartość propsa to zagnieżdżonych odnośników także deklaruje się w odniesieniu do adresu URL Route-rodzica. Komponent About renderuje się na adresie /about, dlatego odnośnik z to="mission" będzie prowadził do /about/mission. Jeżeli natomiast byłaby potrzeba utworzenia odnośnika do innej strony, wtedy konieczne będzie wskazanie pełnej ścieżki,np. to="/products".
