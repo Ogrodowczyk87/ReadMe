@@ -52,3 +52,29 @@ https://www.npmjs.com/package/md5
 - provider na app po pierwsze
 - potem przechodzimy do stora i w zaleznosci co chcemy tast jakis np taskow
 - wtedy tworzymy slica od taska createSlice i tworzymy reducery i wyciagamy akcje i reducer i wrzucamy do stora
+
+#rozwoj
+
+Konfy:
+AppJS conf
+React Berlin Conference
+
+
+Ogarniać Typescript
+I Reacta
+https://react.dev/learn
+
+https://nextjs.org/ - do frontu
+
+
+BE: NodeJS
+(ExpressJS)
+
+https://nestjs.com/ - do backendu
+
+
+https://reactnative.dev/
+
+GitHub Co pilot
+
+Pad Nine

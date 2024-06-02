@@ -77,6 +77,7 @@
 - [Parametry URL](#parametry-url)
 - [Hook useParams](#hook-useparams)
 - [Zagnieżdżone ścieżki](#zagnieżdżone-ścieżki)
+- [Ścieżki indeksowe](#ścieżki-indeksowe)
 
 
 # Single-Page Application
@@ -2893,3 +2894,130 @@ Jeśli URL pokryje się z wartością propsa path zagnieżdżonej ścieżki, Out
 >:bulb:WZGLĘDNE ODNOŚNIKI
 >
 >Zwróć uwagę na wartość propsa to komponentu Link w przykładzie powyżej. Tak jak path zagnieżdżonej ścieżki, wartość propsa to zagnieżdżonych odnośników także deklaruje się w odniesieniu do adresu URL Route-rodzica. Komponent About renderuje się na adresie /about, dlatego odnośnik z to="mission" będzie prowadził do /about/mission. Jeżeli natomiast byłaby potrzeba utworzenia odnośnika do innej strony, wtedy konieczne będzie wskazanie pełnej ścieżki,np. to="/products".
+
+
+# Ścieżki indeksowe
+
+Koncepcja zagnieżdżonych ścieżek pozwala nam również na tworzenie komponentów ze wspólną, powtarzającą się na wielu stronach zawartością. Idealnym przykładem jest tutaj menu nawigacji. Z reguły powinno się ono znajdować na każdej stronie, aby umożliwić swobodną nawigację po całej aplikacji. Dublowanie kodu i dodawanie komponentu nawigacji do każdego komponentu strony nie jest zbyt praktyczne. Wykorzystajmy więc poznaną dotychczas składnię, aby to uprościć.
+
+Na początek zdefiniujmy w naszej aplikacji nagłówek z logotypem i główną nawigacją, a także kontener ograniczający szerokość zawartości każdej strony.
+
+```js
+// Imports
+
+export const App = () => {
+  return (
+    <Container>
+      <Header>
+        <Logo>
+          <span role="img" aria-label="computer icon">
+            💻
+          </span>{" "}
+          GoMerch Store
+        </Logo>
+        <nav>
+          <Link to="/">Home</Link>
+          <Link to="/about">About</Link>
+          <Link to="/products">Products</Link>
+        </nav>
+      </Header>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />}>
+          <Route path="mission" element={<Mission />} />
+          <Route path="team" element={<Team />} />
+          <Route path="reviews" element={<Reviews />} />
+        </Route>
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/:productId" element={<ProductDetails />} />
+      </Routes>
+    </Container>
+  );
+};
+```
+Teraz przenieśmy ten układ i jego style do oddzielnego komponentu SharedLayout. Zwróć uwagę na wykorzystanie i położenie komponentu Outlet - to w tym miejscu będą renderowały się komponenty poszczególnych stron.
+
+```js
+// Imports
+import { Outlet } from "react-router-dom";
+
+export const SharedLayout = () => {
+  return (
+    <Container>
+      <Header>
+        <Logo>
+          <span role="img" aria-label="computer icon">
+            💻
+          </span>{" "}
+          GoMerch Store
+        </Logo>
+        <nav>
+          <Link to="/">Home</Link>
+          <Link to="/about">About</Link>
+          <Link to="/products">Products</Link>
+        </nav>
+      </Header>
+      <Outlet />
+    </Container>
+  );
+};
+```
+Pozostaje wykorzystać nowy komponent w App, tak aby renderował się dla każdej ścieżki. W tym celu będziemy renderować go na adresie /, a wszystkie pozostałe ścieżki będą w nim zagnieżdżone.
+
+```js
+// Imports
+import { SharedLayout } from "path/to/components/SharedLayout";
+
+export const App = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<SharedLayout />}>
+        <Route path="about" element={<About />}>
+          <Route path="mission" element={<Mission />} />
+          <Route path="team" element={<Team />} />
+          <Route path="reviews" element={<Reviews />} />
+        </Route>
+        <Route path="products" element={<Products />} />
+        <Route path="products/:productId" element={<ProductDetails />} />
+      </Route>
+    </Routes>
+  );
+};
+```
+
+Zwróć uwagę na to, że zaktualizowane zostały również ścieżki dla propsa path - relatywnie do nowego rodzica /.
+
+Możesz się zastanawiać gdzie znikł komponent Home, który wcześniej renderował się dla path="/"?. Przecież teraz na / renderuje się tylko SharedLayout... Trafne spostrzeżenie! Chcąc naprawić ten problem musimy dodać tzw. "ścieżkę indeksową".
+
+```js
+// Imports
+import { SharedLayout } from "path/to/components/SharedLayout";
+
+export const App = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<SharedLayout />}>
+        <Route index element={<Home />} />
+        <Route path="about" element={<About />}>
+          <Route path="mission" element={<Mission />} />
+          <Route path="team" element={<Team />} />
+          <Route path="reviews" element={<Reviews />} />
+        </Route>
+        <Route path="products" element={<Products />} />
+        <Route path="products/:productId" element={<ProductDetails />} />
+      </Route>
+    </Routes>
+  );
+};
+```
+>:bulb:JAK TO DZIAŁA
+>
+>"Indeksowa" może być tylko zagnieżdżona ścieżka. W jej Route nie wskazuje się propsa path, ponieważ chcemy aby jej path pokrywał się z tym rodzica. Zamiast tego przekazywany jest specjalny props index, który informuje router, że ścieżka indeksowa powinna zostać wyrenderowana pod tym samym adresem, co jego rodzic.
+
+
+
+
+
+
+
+
