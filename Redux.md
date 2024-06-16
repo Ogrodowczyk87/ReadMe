@@ -1,3 +1,15 @@
+- [**REDUX**](#redux)
+- [Zarządzanie stanem](#zarządzanie-stanem)
+- [Przepływ danych](#przepływ-danych)
+- [Menadżer zadań](#menadżer-zadań)
+- [Projektowanie statusu](#projektowanie-statusu)
+- [Struktura plików projektu](#struktura-plików-projektu)
+- [Store](#store)
+- [Subskrypcja store](#subskrypcja-store)
+- [Filtrowanie po statusie](#filtrowanie-po-statusie)
+- [Lista zadań](#lista-zadań)
+- [Licznik zadań](#licznik-zadań)
+- [Funkcje selektory](#funkcje-selektory)
 
 
 # **REDUX**
