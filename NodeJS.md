@@ -5,6 +5,8 @@
 - [Moduły ECMAScript](#moduły-ecmascript)
 - [Praca z plikami](#praca-z-plikami)
 - [Tworzenie aplikacji konsolowych](#tworzenie-aplikacji-konsolowych)
+- [Wprowadzenie do Express](#wprowadzenie-do-express)
+- [Oprogramowanie pośredniczące](#oprogramowanie-pośredniczące)
 
 
 # System modułowy Node.js
@@ -460,3 +462,153 @@ if (!isValid(value)) {
     - Nasz program kończy się
 - Jeżeli jednak odpowiedź nie pokrywa się, wykonujemy ponownie funkcję game() do momentu w którym liczba zostanie odgadnięta.
 ![console2](./Images/console-app-2pl-c3cd1b4143c8989bcbd8269ea288a445.png)
+
+>:fire:usuwasz z palca node_modules paczki i tak są zapisane w dependencies, więc npm install zainstaluje node_modules gdy ich nie ma
+
+# Wprowadzenie do Express
+
+Express - to minimalistyczny i elastyczny web framework dla aplikacji Node.js, dostarczający obszerny zestaw narzędzi potrzebnych dla typowej aplikacji backend. Pozwala wygodnie tworzyć między innymi API oparte o protokół HTTP i metodologię REST.
+
+Przystąpmy od razy do praktyki. Utwórz katalog dla swojej aplikacji i przejdź do niego
+
+```
+$ mkdir myapp
+$ cd myapp
+```
+Przy pomocy polecenia:
+```
+$ npm init -y
+```
+utwórz plik `package.json` dla swojej aplikacji. Teraz zainstaluj paczkę Express w katalogu myapp i zapisz go na liście zależności poprzez polecenie:
+```
+$ npm install express
+```
+UWAGA: w poniższych przykładach korzystamy z wersji express `4.18.2` - możesz sprawdzić ją w pliku `package.json`
+
+W katalogu myapp utwórz plik o nazwie `app.js` i dodaj w niej następujący kod:
+```js
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Hello World!');
+});
+
+app.listen(3000, () => {
+  console.log('Example app listening on port 3000!');
+});
+```
+Aplikacja uruchamia serwer i nasłuchuje połączeń na porcie 3000. Uruchom ją korzystając z polecenia:
+```
+$ node app.js
+```
+Aplikacja daje w przeglądarce odpowiedź` “Hello World!”` dla zapytania GET adresowanego do root URL (/) (w przypadku uruchomienia aplikacji lokalnie, pełną ścieżką będzie więc `[localhost:3000/](http://localhost:3000`) lub `127.0.0.1:3000/`.
+
+O ścieżce i funkcji która zostanie wywołana dla niej będziemy mówić w skrócie jako o `route`
+
+URL-e które udostępnia dany serwer w swoim API, nazywamy też często `endpoint`-ami, są to właśnie swojego rodzaju “punkty styku” pomiędzy frontendem a backendem.
+
+Dla wszystkich pozostałych ścieżek URL odpowiedzią będzie standardowy status `404 - Not Found`.
+
+Dla opracowywania zapytań, w `routes` w Express dodano szereg wbudowanych funkcji. `Routing` bądź trasowanie określa, jak twoja aplikacja odpowiada na zapytanie klienta dla konkretnego adresu – URL. Każdy route może mieć jedną lub więcej funkcji, które wykonują się przy odpytaniu danej ścieżki. Określenie route w Express ma następującą strukturę:
+
+`app.METHOD(PATH, HANDLER)`
+
+Gdzie:
+
+**app** to instancja aplikacji Express.
+
+**METHOD** -— metoda zapytania HTTP (GET, POST, PUT, PATCH, DELETE).
+
+**PATH** —- ścieżka na serwerze, w naszym przypadku mamy tylko jedną i jest nią root strony '/'.
+
+**HANDLER** —- funkcja, wykonywana po odpytaniu naszego endpointa.
+
+Przyjrzyjmy się krótko temu, do czego wykorzystuje się każdą z metod HTTP:
+
+- GET żąda danych o zasobie. Zapytania z wykorzystaniem tej metody mają tylko zwracać dane.
+- POST wykorzystuje się aby utworzyć nowy zasób przy użyciu danych wysłanych w zapytaniu
+- PUT służy do utworzenia lub **(częściej) modyfikacji całościowej danego zasobu
+- DELETE usuwa wskazany zasób.
+    PATCH wykorzystuje się do częściowej aktualizacji zasobu. Wrócimy jeszcze do czasowników, gdy będziemy analizować tworzenie pełnego REST API. 
+
+W naszym przypadku funkcja HANDLER przyjmuje również dwa parametry, obiekt zapytania req i obiekt odpowiedzi `res` (istnieje trzeci parametr `next` do którego wrócimy w dalszej części kursu).
+
+```js
+(req, res) => {
+  res.send('Hello World!');
+};
+```
+Do uruchomienia serwera wywołuje się metodę `app.listen()`, w której przekazuje się numer portu. Aplikacja zwraca odpowiedź "Hello World!" na zapytania adresowane do root URL (/) lub trasy. Dla wszystkich pozostałych ścieżek (endpointów) które nie są zdefiniowane w naszej aplikacji, na przykład `http://localhost:3000/contact`, odpowiedzią będzie:
+
+```js
+Cannot GET /contact
+--- 404 Not Found ---
+```
+Dodamy program obsłużenia route `/contact`:
+
+```js
+app.get('/contact', (req, res) => {
+  res.send('<h1>Contact page</h1>');
+});
+```
+I teraz URL http://localhost:3000/contact będzie zwracał nam dokument z nagłówkiem Contact page.
+
+::: tip ❗ NOTE
+
+Nie zapomnij zapisać pliku serwera i ponownie go uruchomić, aby zobaczyć zmiany w kodzie.
+
+:::
+
+Symbol ? w ścieżce definiuje, że poprzedni znak może wystąpić 1 raz lub być całkiem nieobecny. Zdefiniowana poniżej ścieżka obsługuje zarówno `/cotact` jak i `/contact`
+
+```js
+app.get('/con?tact', (req, res) => {
+  res.send('<h1>Contact page</h1>');
+});
+```
+Symbol + definiuje, że poprzedzający go znak może wystąpić jeden raz lub więcej. Ta ścieżka obsługuje: `/contact`, `/conntact`, `/connntact` i tak dalej.
+```js
+app.get('/con+tact', (req, res) => {
+  res.send('<h1>Contact page</h1>');
+});
+```
+Symbol * definiuje, że na miejscu tego symbolu może znajdować się dowolna ilość innych znaków. Ta ścieżka obsługuje `/contact`, `/conxtact`, /`con123tact` i tak dalej.
+```js
+app.get('/con*tact', (req, res) => {
+  res.send('<h1>Contact page</h1>');
+});
+```
+
+Warto zauważyć, że choć jest taka możliwość, lepiej wybierać określone ścieżki bez korzystania z symboli jeśli nie ma takiej potrzeby.
+
+# Oprogramowanie pośredniczące
+
+Przejdźmy teraz do tematu middleware lub oprogramowania pośredniczącego. W praktyce oprogramowanie pośredniczące to po prostu funkcja przyjmująca trzy argumenty: obiekt zapytania (`req`), obiekt odpowiedzi (`res`) i funkcję `next`. Oprogramowanie pośredniczące wykonuje się kaskadowo lub łańcuchowo. Wyobraź sobie rurę wodociągową, którą płynie woda. Woda pompowana jest przez jeden koniec rury, następnie przepływa przez ciśnieniomierz i zawory, nasze oprogramowanie pośredniczące, zanim wpada do miejsca przeznaczenia – naszej szklanki. Podobnie jak w tej analogii, kolejność `middlewares` ma znaczenie. Na końcu łańcucha middleware znajdzie się funkcja obsługująca ścieżkę (kończąca się na przykład metodą `res.send()`)
+
+Stwórzmy własne oprogramowanie pośredniczące w naszym pliku `app.js` przed wywołaniem dowolnej ścieżki.
+
+```js
+app.use((req, res, next) => {
+  console.log('Nasze oprogramowanie pośredniczące');
+  next();
+});
+```
+Ta funkcja na ten moment nie robi nic istotnego, ale każde zapytanie przechodzi przez nią, a na konsoli zawsze będzie wyskakiwać nasza wiadomość.
+
+![middelwere](./Images/05-middleware-pl.png)
+
+>:bulb:Definicja
+>
+>Oprogramowanie pośredniczące (middleware) to funkcje mające dostęp do obiektu zapytania (req), obiektu odpowiedzi (res) i funkcji przetwarzania pośredniego w cyklu "zapytanie-odpowiedź" aplikacji. Funkcja kontynuowania wykonywania z reguły definiowana jest jako next.
+
+
+Co robi więc `middleware`?
+
+- wykonuje kod wspólny dla wielu ścieżek;
+- wnosi zmiany do obiektów zapytań i odpowiedzi;
+- może zakończyć cykl "zapytanie-odpowiedź" i przerwać opracowywanie zapytania;
+- może wywołać następną funkcję przetwarzania z kolejki, poprzez wykonanie funkcji next().
+Ważne!
+
+>:fire:Jeżeli bieżąca funkcja przetwarzania pośredniego nie kończy cyklu "zapytanie-odpowiedź", powinna ona wywołać next() aby przejść do następnej funkcji. W przeciwny razie zapytanie zawiesi się. 
