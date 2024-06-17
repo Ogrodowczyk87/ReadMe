@@ -7,6 +7,15 @@
 - [Tworzenie aplikacji konsolowych](#tworzenie-aplikacji-konsolowych)
 - [Wprowadzenie do Express](#wprowadzenie-do-express)
 - [Oprogramowanie pośredniczące](#oprogramowanie-pośredniczące)
+- [Przekazanie danych na serwer](#przekazanie-danych-na-serwer)
+  - [Przekazanie parametru do URL](#przekazanie-parametru-do-url)
+- [Wykorzystanie parametrów zapytania `GET`](#wykorzystanie-parametrów-zapytania-get)
+- [Wysyłanie danych przy pomocy formularza](#wysyłanie-danych-przy-pomocy-formularza)
+- [Przekazanie JSON](#przekazanie-json)
+- [Routing w aplikacji](#routing-w-aplikacji)
+  - [Metody Route](#metody-route)
+- [Metody odpowiedzi](#metody-odpowiedzi)
+- [Łańcuchy metod](#łańcuchy-metod)
 
 
 # System modułowy Node.js
@@ -612,3 +621,185 @@ Co robi więc `middleware`?
 Ważne!
 
 >:fire:Jeżeli bieżąca funkcja przetwarzania pośredniego nie kończy cyklu "zapytanie-odpowiedź", powinna ona wywołać next() aby przejść do następnej funkcji. W przeciwny razie zapytanie zawiesi się. 
+
+# Przekazanie danych na serwer
+
+## Przekazanie parametru do URL
+Pierwszy sposób – przekazanie przez parametr. Ścieżki mogą zawierać parametry – nazwane segmenty adresu URL. Nazwa parametru powinna zawierać symbole z przedziału [A-Za-z0-9_]. W określeniu ścieżki, przed nazwą parametru stawia się znak dwukropka. Dodamy następujący handler dla ścieżki:
+
+Pierwszy sposób – przekazanie przez parametr. Ścieżki mogą zawierać parametry – nazwane segmenty adresu `URL`. Nazwa parametru powinna zawierać symbole z przedziału `[A-Za-z0-9_]`. W określeniu ścieżki, przed nazwą parametru stawia się znak dwukropka. Dodamy następujący handler dla ścieżki:
+
+```js
+app.get('/contact/:id', (req, res) => {
+  res.send(`<h1>Contact</h1> Prametr: ${req.params.id}`);
+});
+```
+Jeżeli teraz zwrócimy się po ścieżce `/contact/123` to `req.params.id` będzie zawierał wartość `123`. Ten sposób przekazywania parametrów na serwer wykorzystywany jest bardzo często. Na przykład aktualizacja danych użytkownika może wyglądać następująco:
+```js
+app.patch('/user/:userId', (req, res) => {
+  const { userId } = req.params;
+    // wykonujemy wymagane działania
+});
+```
+Zobaczymy więcej przykładów gdy będziemy analizować REST API.
+
+# Wykorzystanie parametrów zapytania `GET`
+Drugi sposób – parametry zapytania GET lub też `query params`. W adresie URL, po którym następuje zwrócenie się do serwera, stawia się znak zapytania `?`, za którym następuje lista par `klucz=wartość` rozdzielonych symbolami `&`. Na przykład:
+```
+http://localhost:3000/contacts?skip=0&limit=10
+```
+To najprostszy sposób między innymi na obsłużenie paginacji wyników naszego zapytania. Rezultat takiego zapytania znajduje się w obiekcie `req.query`. W naszym konkretnym przykładzie:
+
+```
+{
+  skip: "0",
+  limit: "10"
+}`
+```
+Jeżeli w zapytaniu `GET` parametry `query` nie są podane, na przykład mamy ścieżkę /`search` bez znaku zapytania i dalszych danych, to req.query domyślnie otrzyma pusty obiekt: `{}`.
+
+Framework Express zawiera wbudowane narzędzie służące do odczytywania parametrów `query`, ponieważ jest to bardzo często spotykana praktyka.
+
+# Wysyłanie danych przy pomocy formularza
+
+Przy wysyłaniu danych na serwer zazwyczaj wykorzystuje się metody `HTTP`: `POST`, `PUT` i `PATCH`. Formularze HTML mogą korzystać z metody `POST`, zobaczmy więc jak odczytać z nich dane.
+
+Żądanie `HTTP` składa się między innymi z listy nagłówków `(headers)` i ciała wiadomości`(request body)`. Zapytanie `POST` od formularza standardowo zawiera nagłówek `Content-Type: application/x-www-form-urlencoded`. Zazwyczaj w celu otrzymania wysłanych danych należy podłączyć odpowiedni parser jako middleware, jest on już zawarty w frameworku. Do utworzenia parsera danych od formularzy stosuje się funkcję `urlencoded()`.:
+
+```js
+app.use(express.urlencoded({ extended: false }));
+```
+
+Do tej funkcji przekazujemy obiekt definiujący parametry parsowania. Wartość `extended: false` wskazuje, że rezultat parsingu będzie reprezentować listę par klucz-wartość, a każda wartość może być przedstawiona jako string lub tablica. Gdy parametr ten jest równy `true`, parser wykorzystuje inną bibliotekę do analizy formatu parametrów.
+
+Przyjmijmy informację od formularza uwierzytelnienia:
+
+```js
+<form action="/login" method="POST">
+  <label for="email">Email</label>
+  <input type="text" name="email" id="email" />
+  <label for="password">Hasło</label>
+  <input type="password" name="password" id="password" />
+  <button type="submit">Zaloguj</button>
+</form>
+```
+Po wciśnięciu przycisku w formularzu, przeglądarka wyśle na `URL` `<url naszej aplikacji>/login` dane formularza. Będą to dwie zmienne: `email` i `password`. Odpowiedzialne są za to wartości atrybutów `name` w znacznikach typu `input`. Te dane możemy odczytać po stronie serwera w następujący sposób:
+
+```js
+app.post('/login', (req, res, next) => {
+  const { email, password } = req.body;
+    // Wykonujemy niezbędne operacje
+});
+```
+W wyniku tego serwer powinien otrzymać dane w obiekcie req.body, w następującej postaci:
+```js
+{
+  email: 'Wartość wprowadzona w polu input o name=email',
+  password: 'Wartość wprowadzona w polu input o name=password'
+}
+```
+# Przekazanie JSON
+Przy tworzeniu aplikacji webowych na `Node.js`, często trzeba pracować z danymi w formacie JSON. To podstawowy sposób przekazywania danych dla Web-API. Istnieje również format `XML`, jednak coraz bardziej się on starzeje z powodu swojej rozwlekłości i wychodzi z użytku. Parser `JSON` w naszej aplikacji podłączamy w następujący sposób:
+```js
+app.use(express.json());
+```
+Dane w postaci JSON mogą pochodzić między innymi
+
+- z kodu `JavaScript`  po stronie przeglądarki,
+- z zapytania z innego serwera
+- zapytania `curl` dla systemu linux
+- Przy użyciu kl`ienta służącego do testowania zapytań HTTP, takiego jak Postman lub Insomnia (więc o nich dowiemy się na module dotyczącym REST API)
+
+Po tym, jak parser `JSON` zostanie podłączony, nasze `handlers` mogą interpretować wartość`req.body` jako obiekt `JavaScript` zamiast wartości string.
+
+```js
+app.post('/login', (req, res, next) => {
+  const { email, password } = req.body;
+    // Wykonujemy niezbędne operacje
+});
+```
+Dany przykład wskazuje, że wysłany został obiekt `JSON` z właściwościami `email` i `password`. Co najważniejsze, w zapytaniu nagłówek `Content-Type` powinien zawierać `application/json`, a ty powinieneś wysłać właśnie wartość typu JSON.
+
+Przeanalizowaliśmy wszystkie podstawowe sposoby przesyłania danych na serwer, które przydadzą się nam później.
+
+# Routing w aplikacji
+## Metody Route
+
+Przy pomocy `klasy express.Router` można utworzyć modułowe, programy obsługi ścieżek (handlers). Instancja `Router` reprezentuje kompleksowy system pośredniczących programów obsługi i trasowania; z tego powodu często nazywany jest "mini-aplikacją".
+```js
+const express = require("express");
+const router = express.Router();
+
+// określamy bazową ścieżkę
+router.get("/", (req, res) => {
+  res.send("To główny router");
+});
+
+// określamy ścieżkę about
+router.get("/about", (req, res) => {
+  res.send("About");
+});
+
+module.exports = router;
+```
+Później podłączamy moduł `my-router.js` w aplikacji:
+```js
+const myRouter = require('./my-router');
+...
+app.use('/my-router', myRouter);
+```
+Dana aplikacja może teraz opracowywać zapytania adresowane do zasobów `/my-router` i `/my-router/about`.
+
+Express wspiera dużą ilość metod trasowania, odpowiadających metodom `HTTP`, ale z większością nie będziemy nawet mieć do czynienia. Podstawowymi metodami dla nas będą:
+
+- `get`
+- `post`
+- `put`
+- `delete`
+- `patch`
+
+Istnieje także szczególna metoda `app.all()`, nie będąca odpowiednikiem konkretnej metody `HTTP`. Ta metoda wykorzystywana jest do ładowania funkcji pośredniczącego opracowywania w ścieżce dla wszystkich metod zapytań. Bywa przydatna, gdy musimy reagować na dowolne zwrócenie się do serwera.
+
+W podanym niżej przykładzie program opracowywania będzie uruchomiony dla zapytań do dla ścieżki /anything, niezależnie od tego, czy wykorzystywany jest `GET`, `POST`, `PUT`, `DELETE` lub jakakolwiek inna metoda zapytania `HTTP`, wspierana w module `http`.
+```js
+app.all('/anything', (req, res, next) => {
+  console.log('Anything method.');
+  next();// przechodzimy do dalszej obsługi zapytania
+});
+```
+# Metody odpowiedzi
+Część metod znajdujących się w obiekcie odpowiedzi (`res`), wymienione zostały w tablicy poniżej, mogą przekazywać odpowiedź do klienta i zakończyć cykl “zapytanie-odpowiedź”. Jeżeli żadna z tych metod nie zostanie wywołana w którejkolwiek funkcji obsługi trasy, zapytanie klienta zawiesi się.
+
+Metoda	            Opis
+
+res.download()	Zaproszenie do ładowania pliku
+
+res.end()	Zakończenie procesu odpowiedzi
+
+res.json()	Wysłanie odpowiedzi JSON
+
+res.jsonp()	Wysłanie odpowiedzi JSON ze wsparciem JSONP
+
+res.redirect()	Przekierowanie odpowiedzi
+
+res.render()	Wyprowadzenie szablonu widoku
+
+res.send()	Wysłanie odpowiedzi różnych typów
+
+res.sendFile()	Wysłanie pliku w postaci strumienia obiektów
+
+# Łańcuchy metod
+Metoda app.route() pozwala tworzyć programy opracowywania tras, łańcuchy dla konkretnej ścieżki trasy. O ile ścieżka jest taka sama, to dla różnych metod HTTP, wygodne jest tworzenie tras modułowych, aby minimalizować redundancję i ilość błędów. Niżej pokazano przykład połączonych w łańcuch programów opracowywania tras, określonych przy pomocy funkcji app.route().
+```js
+app
+  .route("/blog")
+  .get((req, res) => {
+    res.send("Get a list of blog");
+  })
+  .post((req, res) => {
+    res.send("Add a record to blog");
+  })
+  .put((req, res) => {
+    res.send("Update blog");
+  });
+  ```
