@@ -35,6 +35,17 @@
 - [Wielowarstwowy (wielopoziomowy) system](#wielowarstwowy-wielopoziomowy-system)
   - [Kod zapytania](#kod-zapytania)
 - [Podsumowanie](#podsumowanie)
+- [Podstawowe metody HTTP](#podstawowe-metody-http)
+  - [Idempotentność](#idempotentność)
+  - [HTTP metoda GET](#http-metoda-get)
+  - [HTTP metoda POST](#http-metoda-post)
+  - [HTTP metoda PUT i PATCH](#http-metoda-put-i-patch)
+  - [HTTP metoda DELETE](#http-metoda-delete)
+  - [Kody odpowiedzi HTTP](#kody-odpowiedzi-http)
+- [CORS](#cors)
+- [Tworzenie URL dla REST API](#tworzenie-url-dla-rest-api)
+- [Przykład REST API aplikacji](#przykład-rest-api-aplikacji)
+  - [Podstawowy plik aplikacj](#podstawowy-plik-aplikacj)
 
 
 # System modułowy Node.js
@@ -1318,3 +1329,266 @@ API Gateway to kolejny przykład dodatkowej warstwy, która przekazuje zapytanie
 Nieobowiązkowe ograniczenie, które odnosi się do możliwości serwera dotyczących wysyłania wykonalnego kodu do klienta. Na przykład gdy dokument HTML jest załadowany, przeglądarka automatycznie ładuje kod plików JavaScript z serwera i wykonuje go lokalnie.
 # Podsumowanie
 W ten sposób system RESTful to dowolna sieć podlegająca analizowanym ograniczeniom. System RESTful powinien być elastyczny dla różnych rodzajów wykorzystania, skalowalny dla podsumowania dużej ilości użytkowników i komponentów i możliwy do adaptowania z biegiem czasu. Pamiętaj jednak, że REST to projekt teoretyczny a nie konkretne implementacje.
+
+# Podstawowe metody HTTP
+## Idempotentność
+
+Właściwość operacji, gdzie przy powtórnym stosowaniu do obiektu, da zawsze taki sam rezultat.
+
+    dodawanie zera: `a=a+0=(a+0)+0=((a+0)+0)+0=...`
+    mnożenie przez jeden: `x = x*1 = (x*1)*1 = ((x*1)*1)*1 = ...`;
+
+Z punktu widzenia usługi- RESTful`, aby operacja była idempotentną, klienci muszą móc wykonywać jedno i to samo wywołanie kilka razy i otrzymywać ten sam rezultat co za pierwszym razem. Może to nam przypomnieć operację przypisania z programowania. Innymi słowy, wysłanie kilku jednakowych zapytań ma taki sam efekt, jak wysłanie tylko jednego z nich. Choć idempotentne operacje dają ten sam rezultat na serwerze, sama odpowiedź może się różnić, to znaczy stan zasobu może zmieniać się między zapytaniami z uwagi na inne operacje wykonane w międzyczasie.
+
+Podstawowe lub najczęstsze wykorzystanie metod HTTP GET/POST/PUT/DELETE:
+
+- GET prosi o dane dotyczące zasobu/zasobów
+- POST tworzy nowy zasób na podstawie wysłanych danych
+- PUT całościowo zastępuje dany zasób wysłanymi danymi lub tworzy go jeśli nie istnieje
+- DELETE usuwa wskazany zasób;
+- PATCH częściowo aktualizuje dany zasób
+
+## HTTP metoda GET
+
+Wykorzystuje się dla otrzymania (lub odczytania) widoku zasobu. W przypadku pomyślnego żądania, metoda GET zwraca widok zasobu w formacie XML lub JSON w połączeniu z kodem stanu HTTP 200 (OK). W przypadku niepowodzenia zwracany jest kod 404 (NOT FOUND) lub 400 (BAD REQUEST). Jest to bezpieczna (idempotentna) metoda. Przeznaczona jest tylko dla otrzymania informacji i nie powinna zmieniać stanu serwera lub powodować efektów ubocznych.
+## HTTP metoda POST
+Zapytanie najczęściej wykorzystywane jest do tworzenia nowych zasobów. Przy tworzeniu nowego zasobu, zapytanie POST wysyła widok, a serwer bierze na siebie odpowiedzialność za przypisanie nowemu zasobowi ID i tak dalej. Przy pomyślnym utworzeniu zasobu zwracany jest kod HTTP – 201 Create, a także może być odesłany nagłówek Location z adresem utworzonego zasobu. Metoda POST nie jest bezpieczna ani idempotentna, ponieważ pojawia się efekt uboczny – utworzenie zasobu, wiele takich samych zapytań POST może utworzyć wiele nowych zasobów.
+
+## HTTP metoda PUT i PATCH
+
+Wykorzystuje się je dla aktualizacji zasobu (lub utworzenia nowego dla PUT). Ciało zapytania przy wysyłaniu zapytania PUT do istniejącego zasobu URL powinno zawierać zaktualizowane dane oryginalnego zasobu (w pełni) lub tylko aktualizowaną część - PATCH. Przy sukcesie aktualizacji zwraca kod 200 (lub 204 jeśli endpoint nie odpowiada żadną zawartością). Metoda PUT uważana jest za niebezpieczną operację, ponieważ w procesie wykonania zachodzi modyfikacja (lub utworzenie) egzemplarza zasobu po stronie serwera, ale ta metoda jest idempotentna. Wiele takich samych zapytań PUT będzie miało taki sam efekt jak jedno zapytanie - podobnie jest w przypadku PATCH.
+## HTTP metoda DELETE
+Wykorzystuje się do usunięcia zasobu identyfikowanego przez konkretny URL (ID). Przy usunięciu zasobu z sukcesem zwracany jest kod 200 (OK) HTTP razem z ciałem odpowiedzi, zawierającym dane usuniętego zasobu. Możliwe jest również wykorzystanie HTTP kodu 204 (NO CONTENT) bez ciała odpowiedzi. Zgodnie ze specyfikacją HTTP, metoda DELETE jest idempotentna. Jeżeli wykonujesz zapytanie DELETE do zasobu, zostaje on usunięty. Powtórne zapytanie DELETE do zasobu zakończy się tak samo: zasób nadal jest usunięty - nie istnieje.
+
+## Kody odpowiedzi HTTP
+
+Jak widać dowolna odpowiedź od serwera powinna przekazywać kod stanu HTTP. Pokazuje on, czy dane zapytanie HTTP zakończyło się powodzeniem. Kody dzielą się na pięć grup, zobaczmy najpopularniejsze wśród nich:
+
+- Informacyjne 100 - 199 (używane najrzadziej)
+
+```
+  100: Continue
+```
+- Zakończone pomyślnie 200 - 299
+```
+  200: OK
+  201: Created
+  202: Accepted
+  204: No Content
+```
+-  Przekierowania 300 - 399
+  ```
+    301: Moved Permanently
+  307: Temporary Redirect
+```
+- Błędy klienta 400 - 499
+```
+  400: Bad Request
+  401: Unauthorized
+  403: Forbidden
+  404: Not Found
+```
+- Błędy serwera 500 - 599
+ ```
+   500: Internal Server Error
+  501: Not Implemented
+  502: Bad Gateway
+  503: Service Unavailable
+  504: Gateway Timeout
+```
+
+# CORS
+
+Cross-Origin Resource Sharing (CORS) to mechanizm, który przy pomocy nagłówków HTTP daje przeglądarce pozwolenie na ładowanie zasobów z konkretnego źródła na zapytanie aplikacji webowej, pochodzącej z odpowiedniego źródła.
+
+> :fire:note
+>
+>Przykładem krzyżowego zapytania jest kod JavaScript aplikacji webowej, umieszczonej w domenie http://example.com, która próbuje przy pomocy zapytania Fetch otrzymać dane Web-API z innej domeny http://api-example.com/data.
+
+W celach bezpieczeństwa wszystkie przeglądarki domyślnie przerywają wszystkie krzyżowe zapytania HTTP, które tworzone są przez JavaScript klienta. Nazywa się to przestrzeganiem zasady jednego źródła i wynika z tego, że aplikacja webowa otrzymana z konkretnej domeny (Github pages) nie może wykonywać zapytań do zasobów HTTP z innej domeny (Heroku). Aby otrzymać odpowiedź na żądanie, serwer webowy, na którym jest realizowane API, powinien zawierać odpowiednie nagłówki CORS.
+
+Mechanizm CORS czyni bezpiecznym zapytania krzyżowe i przekazywanie danych między przeglądarkami webowymi i serwerami webowymi.
+
+Dla Node.js to moduł cors, dostępny przez rejestr npm. Instalacja przeprowadzana jest przy pomocy:
+```
+npm install cors
+```
+Przyklad:
+```js
+const express = require('express');
+const cors = require('cors');
+const app = express();
+
+app.use(cors());
+
+app.get('/', (req, res, next) => {
+  res.json({ message: 'CORS is activated' });
+});
+
+app.listen(3000, function () {
+  console.log('CORS-enabled web server listening on port 3000');
+});
+```
+W funkcji middleware `cors`, możemy przekazać jako argument konfigurowalny obiekt z następującymi właściwościami:
+
+- `origin`: Dostosowuje nagłówek CORS Access-Control-Allow-Origin. Najczęściej to łańcuch "*", który oznacza zapytanie od dowolnej domeny. Możliwa jest konkretna wartość w typie "http://example.com" i będą wtedy dozwolone tylko zapytania z "http://example.com". Można wykorzystywać regularne wyrażenie lub tablicę łańcuchów lub regularnych wyrażeń, jeśli chcemy aby dostęp do API był możliwy z różnych domen.
+- `methods`: Dostosowuje nagłówek CORS Access-Control-Allow-Methods. Żąda łańcucha z metodami HTTP, na przykład "GET, PUT, POST", prawidłowa jest też tablica ['GET', 'PUT', 'POST'], które mogą kierować zapytania między domenami.
+- `allowedHeaders`: Dostosowuje nagłówek CORS Access-Control-Allow-Headers. Żąda łańcucha z separatorami w formie przecinków, na przykład "Content-Type, Authorization" lub tablicy ['Content-Type', 'Authorization'] – definiuje jakie nagłówki są dozwolone przy zapytaniu.
+- `exposedHeaders`: Dostosowuje nagłówek CORS Access-Control-Expose-Headers. Zarządza nagłówkami użytkownika.
+- `credentials`: Dostosowuje nagłówek CORS Access-Control-Allow-Credentials. Ustaw true dla przekazania nagłówka, w przeciwnym razie nie pokazuje się.
+- `maxAge`: Dostosowuje nagłówek CORS Access-Control-Max-Age. Ustaw liczbę całkowitą dla przekazania nagłówka, w przeciwnym razie jest pomijany.
+- `preflightContinue`: Definiuje czy przekazać odpowiedź wstępnego sprawdzenia CORS następującemu programowi opracowywania.
+- `optionsSuccessStatus`: Dostarcza kod stanu do wykorzystania przy zakończonych sukcesem zapytaniach korzystających z metody OPTIONS, ponieważ niektóre starzejące się przeglądarki (IE11, różne SmartTV) nie potrafią zrozumieć statusu 20- 
+
+Konfiguracja domyślnie to:
+
+```js
+{  
+    origin: '*',  
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',  
+    preflightContinue: false,  
+    optionsSuccessStatus: 204
+}
+```
+
+# Tworzenie URL dla REST API
+
+W tym rozdziale porozmawiamy o prawidłowym nazywaniu zasobów dla API. Gdy zasoby są nazwane nieprawidłowo, API jest nieintuicyjne i trudne w użytkowaniu. Często URL zapytania zasobu nazywany jest `endpoint`-em API.
+
+Co jest dobrą praktyką dla prawidłowego nadawania nazw?
+
+Po pierwsze należy wykorzystywać dla opisania bazowych URL rzeczowniki w liczbie mnogiej – `users`, `contacts`. Należy także stosować konkretne i czytelne nazwy `news`, `videos`, a nie abstrakcyjne `items` lub `elements`. Dodatkowe parametry niezbędne dla obsługi żądania należy podawać za znakiem `?` czyli korzystają z `queryparams`. Przykładem jest
+
+- wykorzystanie paginacji /users?limit=25&offset=50
+- filtrowanie odpowiedzi /friends?fields=id,name,picture.
+
+W oparciu o wcześniejsze informacje, następujące nazwy będą złą praktyką:
+
+```
+/api/users/13/remove // powinniśmy użyć metody HTTP DELETE
+/api/getusers // niepotrzebny czasownik
+/api/v1/users-get // niepotrzebny czasownik
+```
+Przeanalizujmy dobre praktyki nazywania URL dla różnych sytuacji.
+
+Dodanie nowego klienta do systemu:
+```
+HTTP metoda: POST
+URL: http://www.example.com/customers
+```
+Odpytanie o dane klienta z identyfikatorem 112233:
+```
+HTTP metoda: GET
+URL: http://www.example.com/customers/112233
+```
+Ten sam URL wykorzystujemy dla metod HTTP – PUT i DELETE odpowiednio dla aktualizacji i usunięcia.
+
+Utworzenie nowego produktu:
+```
+HTTP metoda: POST
+URL: http://www.example.com/products
+```
+Dla odczytania, aktualizacji, usunięcia produktu z 432111, odpowiednio:
+```
+HTTP metoda: GET, PUT, DELETE
+URL: http://www.example.com/products/432111
+```
+Utworzenie nowego zamówienia dla klienta na zewnątrz kontekstu klienta.
+```
+HTTP metoda: POST
+URL: http://www.example.com/orders
+```
+Utworzenie tego samego zamówienia, ale w kontekście konkretnego klienta z ID 332244.
+```
+HTTP metoda: POST
+URL: http://www.example.com/customers/332244/orders
+```
+Lista zamówień należących do klienta ID 332244:
+```
+HTTP metoda: GET
+URL: http://www.example.com/customers/332244/orders
+```
+URL dla dodania nowej pozycji w zamówieniu z ID 1234, dla klienta z ID 332244:
+```
+HTTP metoda: POST
+URL: http://www.example.com/customers/332244/orders/1234/lineorders
+```
+Otrzymanie listy zamówienia po ID zamówienia bez znajomości ID konkretnego klienta.
+```
+HTTP metoda: GET
+URL: http://www.example.com/orders/8769
+```
+Paginacja zachodzi przez `queryparams` przy pomocy parametrów
+
+- offset - który mówi ile wyników chcemy pominąć
+- limit  - maksymalna ilość zwracanych elementów.
+
+Mogą się one nazywać inaczej, na przykład `skip`, `limit`.
+```
+HTTP metoda: GET
+URL: http://api.example.com/resources?offset=0&limit=25
+```
+Skomplikowane filtrowanie po wartościach. Można wykorzystać separator podwójnego dwukropka ::, który oddziela nazwę właściwości od wartości którą należy porównać.
+```
+HTTP metoda: GET
+URL: http://www.example.com/users?filter="name::sam|city::denver"
+```
+Sortowanie. Jeden ze sposobów, w którym dla każdej przekazywanej właściwości przeprowadzane jest sortowanie w porządku rosnącym, a dla każdej właściwości z prefiksową pauzą ("-"), sortowanie zachodzi w porządku malejącym. Separator dla każdej nazwy właściwości to pionowa kreska ("|").
+```
+HTTP metoda: GET
+URL: http://www.example.com/users?sort=lastName|firstName|-birthdate
+```
+
+# Przykład REST API aplikacji
+
+Przeanalizujmy proste Web-API. Realizujemy standardową listę zadań. API będzie zawierało pełen zbiór operacji CRUD (Create, Read, Update, Delete) dla naszych zadań (tasks).
+
+Będziemy pracować z dwoma URL-ami:
+
+/api/tasks/ - pełny CRUD, obsługa wszystkich potrzebnych metod;
+
+/api/tasks/:id/status - do zmiany statusu zadania, czy jest wykonane, czy nie.
+
+
+Wszystkie zapytania do naszego API będziemy wykonywać przy pomocy narzędzia Postman.
+
+## Podstawowy plik aplikacj
+```js
+const express = require('express');
+const cors = require('cors');
+const routerApi = require('./api');
+
+const app = express();
+
+// parse application/json
+app.use(express.json());
+// cors
+app.use(cors());
+
+app.use('/api', routerApi);
+
+app.use((_, res, __) => {
+  res.status(404).json({
+    status: 'error',
+    code: 404,
+    message: 'Use api on routes: /api/tasks',
+    data: 'Not found',
+  });
+});
+
+app.use((err, _, res, __) => {
+  console.log(err.stack);
+  res.status(500).json({
+    status: 'fail',
+    code: 500,
+    message: err.message,
+    data: 'Internal Server Error',
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, function () {
+  console.log(`Server running. Use our API on port: ${PORT}`);
+});
+```
